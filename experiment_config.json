@@ -1,0 +1,6 @@
+{
+  "name": "LEGOHead",
+  "num_clients": 1,
+  "num_runs": 1,
+  "trace_root_url": "https://github.com/molguin92/CognitiveAssistanceTraces/releases/download/LEGOVideo2/"
+}
