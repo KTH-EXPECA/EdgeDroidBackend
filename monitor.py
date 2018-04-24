@@ -52,13 +52,13 @@ class ResourceMonitor():
     @staticmethod
     def _sample(samples):
 
-        cpu_loads = psutil.cpu_percent(percpu=True)
+        cpu_load = psutil.cpu_percent(percpu=False)
         mem_status = psutil.virtual_memory()
         timestamp = time.time() * 1000.0  # convert to milliseconds
 
         samples.append(
             {
-                'cpu_loads': cpu_loads,
+                'cpu_load': cpu_load,
                 'mem_avail': mem_status.available,
                 'timestamp': timestamp
             }
