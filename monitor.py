@@ -1,19 +1,19 @@
+import time
 from collections import namedtuple
-from multiprocessing import Process, RLock, Condition
+from multiprocessing import Manager
+
 import psutil
-from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.executors.pool import ProcessPoolExecutor
-from datetime import datetime
+from apscheduler.schedulers.background import BackgroundScheduler
 
 
 class ResourceMonitor():
-    Sample = namedtuple('Sample', ['timestamp', 'cpu_load', 'avail_mem'])
 
-    def __init__(self):
-        self.cond = Condition(RLock())
-        self.sampling_interval = 1.0 / 5  # 5 Hz
-        self.samples = list()
-        self.total_mem = psutil.virtual_memory()['total']
+    def __init__(self, sampling_freq=5):
+        self.sampling_interval = 1.0 / sampling_freq  # 5 Hz by default
+        self.total_mem = psutil.virtual_memory().total
+        self.manager = Manager()
+        self.samples = self.manager.list()
 
         self.scheduler = BackgroundScheduler(
             executors={'default': ProcessPoolExecutor(1)}
@@ -23,8 +23,8 @@ class ResourceMonitor():
     def start(self):
         if not self.job:
             self.job = self.scheduler.add_job(ResourceMonitor._sample,
-                                          'interval', args=(self,),
-                                          seconds=self.sampling_interval)
+                                              'interval', args=(self.samples,),
+                                              seconds=self.sampling_interval)
             self.scheduler.start()
         else:
             raise RuntimeError('There is already a sampling job running!')
@@ -36,5 +36,38 @@ class ResourceMonitor():
         self.job.remove()
         self.scheduler.shutdown()
 
-    def _sample(self):
-        pass
+        self.job = None
+
+    def shutdown(self, print_samples=False):
+        self.stop()
+
+        samples = self.samples._getvalue()
+        self.manager.shutdown()
+
+        if print_samples:
+            from pprint import PrettyPrinter
+            PrettyPrinter(indent=4).pprint(samples)
+        return samples
+
+    @staticmethod
+    def _sample(samples):
+
+        cpu_loads = psutil.cpu_percent(percpu=True)
+        mem_status = psutil.virtual_memory()
+        timestamp = time.time() * 1000.0  # convert to milliseconds
+
+        samples.append(
+            {
+                'cpu_loads': cpu_loads,
+                'mem_avail': mem_status.available,
+                'timestamp': timestamp
+            }
+        )
+
+
+if __name__ == '__main__':
+    monitor = ResourceMonitor()
+    monitor.start()
+    time.sleep(5)
+    monitor.shutdown(print_samples=True)
+
