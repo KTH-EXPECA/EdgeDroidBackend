@@ -32,7 +32,6 @@ class Client():
     """
 
     success_msg = 0x00000001
-    getconfig_msg = 0x00000002
     getstats_msg = 0x00000003
     error_msg = 0xffffffff
 
@@ -45,23 +44,34 @@ class Client():
     def close(self):
         self.conn.close()
 
-    def get_remote_stats(self):
+    def get_remote_stats(self, experiment_id):
         buf = struct.pack('>I', self.getstats_msg)
         self.conn.sendall(buf)
 
         self.stats = recvJSON(self.conn)
+
+        # check that experiment id matches
+        if self.stats['experiment_id'] != experiment_id:
+                buf = struct.pack('>I', self.error_msg)
+                self.conn.sendall(buf)
+                raise RuntimeError('Experiment ID\'s do not match!')
+
+        self.config = dict()
+        self.config['client_id'] = self.stats['client_id']
+        self.config['experiment_id'] = self.stats['experiment_id']
+
         return self.stats
 
-    def get_remote_config(self, experiment_id):
-        buf = struct.pack('>I', self.getconfig_msg)
-        self.conn.sendall(buf)
+    #def get_remote_config(self, experiment_id):
+    #    buf = struct.pack('>I', self.getconfig_msg)
+    #    self.conn.sendall(buf)
 
-        self.config = recvJSON(self.conn)
+    #    self.config = recvJSON(self.conn)
 
-        if self.config['experiment_id'] != experiment_id:
-            buf = struct.pack('>I', self.error_msg)
-            self.conn.sendall(buf)
-            raise RuntimeError('Experiment ID\'s do not match!')
+    #    if self.config['experiment_id'] != experiment_id:
+    #        buf = struct.pack('>I', self.error_msg)
+    #        self.conn.sendall(buf)
+    #        raise RuntimeError('Experiment ID\'s do not match!')
 
     def _wait_for_confirmation(self):
         # wait for confirmation by client

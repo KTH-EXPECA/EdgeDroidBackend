@@ -21,7 +21,7 @@ class Experiment():
     def _gen_config_for_client(self, client_index):
         c = dict()
         c['experiment_id'] = self.config['experiment_id']
-        c['client_idx'] = client_index
+        c['client_id'] = client_index
         c['runs'] = self.config['runs']
         c['steps'] = self.config['steps']
         c['trace_root_url'] = self.config['trace_root_url']
@@ -59,11 +59,11 @@ class Experiment():
 
                     # all clients reconnected
                     system_stats = monitor.shutdown()
-                    pool.map(lambda c: c.get_remote_config(
-                        self.config['experiment_id']), self.clients)
+                    # pool.map(lambda c: c.get_remote_config(
+                    #    self.config['experiment_id']), self.clients)
 
-                    stats = pool.map(lambda c: c.get_remote_stats(),
-                                     self.clients)
+                    stats = pool.map(lambda c: c.get_remote_stats(
+                        self.config['experiment_id']), self.clients)
 
                 with open('system_stats.csv', 'w') as f:
                     fieldnames = ['cpu_load', 'mem_avail', 'timestamp']
@@ -72,7 +72,7 @@ class Experiment():
                     writer.writerows(system_stats)
 
                 for stat_coll in stats:
-                    client_index = stat_coll['client_idx']
+                    client_index = stat_coll['client_id']
                     with open('{:03}_stats.json'.format(client_index),
                               'w') as f:
                         json.dump(stat_coll, f)
