@@ -4,11 +4,11 @@ import json
 MAX_CHUNK_SIZE = 2048
 
 
-def recvall(conn, len):
+def recvall(conn, length):
     total_recv = 0
     data = []
-    while total_recv < len:
-        d = conn.recv(min(len - total_recv, MAX_CHUNK_SIZE))
+    while total_recv < length:
+        d = conn.recv(min(length - total_recv, MAX_CHUNK_SIZE))
         if d == b'':
             raise RuntimeError("socket connection broken")
         data.append(d)
@@ -18,10 +18,10 @@ def recvall(conn, len):
 
 def recvJSON(conn):
     length_b = recvall(conn, 4)
-    (length) = struct.unpack('>I', length_b)
+    (length,) = struct.unpack('>I', length_b)
 
     json_b = recvall(conn, length)
-    (json_s) = struct.unpack('>{l}s'.format(l=length), json_b)
+    (json_s,) = struct.unpack('>{l}s'.format(l=length), json_b)
 
     return json.loads(json_s.decode('utf-8'))
 
@@ -77,7 +77,7 @@ class Client():
         # wait for confirmation by client
         # client sends back a byte with value 0x00000001 when ready
         confirmation_b = recvall(self.conn, 4)
-        (confirmation) = struct.unpack('>I', confirmation_b)
+        (confirmation,) = struct.unpack('>I', confirmation_b)
         if confirmation != self.success_msg:
             raise RuntimeError(
                 'Client {}: error on confirmation!'.format(self.addr))

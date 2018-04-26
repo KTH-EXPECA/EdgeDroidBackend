@@ -5,7 +5,6 @@
   "steps": 7,
   "trace_root_url": "https://github.com/molguin92/CognitiveAssistanceTraces/releases/download/LEGOVideo2/",
   "ports": [
-    // one entry for each client here
     {
       "video": 9098,
       "result": 9111,
