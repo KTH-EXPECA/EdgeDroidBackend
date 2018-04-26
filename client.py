@@ -96,4 +96,3 @@ class Client():
     def run_experiment(self):
         buf = struct.pack('>I', self.success_msg)
         self.conn.sendall(buf)
-        self._wait_for_confirmation()
