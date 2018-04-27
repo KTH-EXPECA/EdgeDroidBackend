@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 import csv
 import json
+import os
+
 from client import Client
 from socket import socket, AF_INET, SOCK_STREAM
 from multiprocessing.pool import Pool
+import click
 
 from monitor import ResourceMonitor
-
-HOST, PORT = '0.0.0.0', 1337
 
 
 def send_config(client):
@@ -28,13 +29,15 @@ def get_stats(client, experiment_id):
 
 class Experiment():
 
-    def __init__(self, config):
+    def __init__(self, config, host, port):
         with open(config, 'r') as f:
             print('Loading config...')
             self.config = json.loads(f.read())
             experiment_id = self.config['experiment_id']
 
         self.clients = list()
+        self.host = host
+        self.port = port
 
     def _gen_config_for_client(self, client_index):
         c = dict()
@@ -50,9 +53,9 @@ class Experiment():
         server_socket = None
         try:
             with socket(AF_INET, SOCK_STREAM) as server_socket:
-                server_socket.bind((HOST, PORT))
+                server_socket.bind((self.host, self.port))
                 server_socket.listen(self.config['clients'])
-                print('Listening on {}'.format((HOST, PORT)))
+                print('Listening on {}'.format((self.host, self.port)))
 
                 # accept N clients for the experiment
                 print('Waiting for {} clients to connect...'
@@ -117,7 +120,17 @@ class Experiment():
             for client in self.clients:
                 client.close()
 
+@click.command()
+@click.argument('experiment_config', type=click.Path(exists=True,
+                                                     dir_okay=False),
+                default=os.getcwd() + '/experiment_config.json')
+@click.option('--host', type=str, default='0.0.0.0',
+              help='Addresss to which bind this server instance.')
+@click.option('--port', type=str, default=1337,
+              help='Port on which to listen for incoming connection.')
+def execute(experiment_config, host, port):
+    e = Experiment(experiment_config, host, port)
+    e.execute()
 
 if __name__ == '__main__':
-    e = Experiment('./experiment_config.json')
-    e.execute()
+    execute()
