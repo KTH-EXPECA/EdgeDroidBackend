@@ -126,7 +126,7 @@ class Experiment():
                 default=os.getcwd() + '/experiment_config.json')
 @click.option('--host', type=str, default='0.0.0.0',
               help='Addresss to which bind this server instance.')
-@click.option('--port', type=str, default=1337,
+@click.option('--port', type=int, default=1337,
               help='Port on which to listen for incoming connection.')
 def execute(experiment_config, host, port):
     e = Experiment(experiment_config, host, port)
