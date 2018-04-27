@@ -28,19 +28,19 @@ The experiment configuration is a JSON file which is parsed by the control scrip
 
 General structure:
 
-```json
+```
 
 {
-  "experiment_id": <name of the experiment>,
-  "clients": <number of clients>,
-  "runs": <number of repetitions per client>,
-  "steps": <number of steps in the task>,
-  "trace_root_url": <URL for downloading .trace files for the steps. Should end in a trailing forward slash ("/")!>,
+  "experiment_id": <name of the experiment, string>,
+  "clients": <number of clients, int>,
+  "runs": <number of repetitions per client, int>,
+  "steps": <number of steps in the task, int>,
+  "trace_root_url": <URL for downloading .trace files for the steps, should end in a trailing forward slash ("/"), string>,
   "ports": [ <one entry per client!:>
     {
-      "video": <video port>,
-      "result": <result port>,
-      "control": <control port>
+      "video": <video port, int>,
+      "result": <result port, int>,
+      "control": <control port, int>
     }
   ]
 }
