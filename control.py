@@ -33,11 +33,15 @@ class Experiment():
         with open(config, 'r') as f:
             print('Loading config...')
             self.config = json.loads(f.read())
-            experiment_id = self.config['experiment_id']
 
         self.clients = list()
         self.host = host
         self.port = port
+
+        print('Config:')
+        print('Experiment ID:', self.config['experiment_id'])
+        print('Client:', self.config['clients'])
+        print('Runs:', self.config['runs'])
 
     def _gen_config_for_client(self, client_index):
         c = dict()
@@ -125,9 +129,11 @@ class Experiment():
                                                      dir_okay=False),
                 default=os.getcwd() + '/experiment_config.json')
 @click.option('--host', type=str, default='0.0.0.0',
-              help='Addresss to which bind this server instance.')
+              help='Addresss to which bind this server instance.',
+              show_default=True)
 @click.option('--port', type=int, default=1337,
-              help='Port on which to listen for incoming connection.')
+              help='Port on which to listen for incoming connection.',
+              show_default=True)
 def execute(experiment_config, host, port):
     e = Experiment(experiment_config, host, port)
     e.execute()
