@@ -12,7 +12,7 @@ def recvall(conn, length):
         if d == b'':
             raise RuntimeError("socket connection broken")
         data.append(d)
-        total_recv += total_recv + len(d)
+        total_recv += len(d)
     return b''.join(data)
 
 
@@ -21,8 +21,20 @@ def recvJSON(conn):
     (length,) = struct.unpack('>I', length_b)
 
     json_b = recvall(conn, length)
-    (json_s,) = struct.unpack('>{l}s'.format(l=length), json_b)
+    try:
+        assert len(json_b) == length
+    except AssertionError:
+        print('len(json_b)', len(json_b))
+        print('length', length)
+        raise
 
+    # total_parsed = 0
+    # json_s = ''
+    # while total_parsed < length:
+    #     parsed_s = struct.unpack('>{l}s'.format(l=min(length,
+    #                                                   MAX_CHUNK_SIZE)), json_b)
+
+    (json_s,) = struct.unpack('>{l}s'.format(l=len(json_b)), json_b)
     return json.loads(json_s.decode('utf-8'))
 
 
