@@ -15,14 +15,20 @@ import docker
 
 from monitor import ResourceMonitor
 
+LEGO_DOCKER_IMG = 'molguin/gabriel-lego'
+SYSTEM_STATS = 'system_stats.csv'
+CLIENT_STATS = '{:02}_stats.json'
+
+# defaults
+DEFAULT_OUTPUT_DIR = '{}/results/'.format(os.getcwd())
+DEFAULT_EXPCONFIG_PATH = '{}/experiment_config.json'.format(os.getcwd())
+DEFAULT_CTRLSERVER_ADDR = '0.0.0.0'
+DEFAULT_CTRLSERVER_PORT = 1337
 DEFAULT_VIDEO_PORT = 9098
 DEFAULT_RESULT_PORT = 9111
 DEFAULT_CONTROL_PORT = 22222
-LEGO_DOCKER_IMG = 'molguin/gabriel-lego'
-SYSTEM_STATS = 'system_stats.csv'
-CLIENT_STATS = '{:03}_stats.json'
-
 NET_IFACE = 'enp0s31f6'
+
 
 TCPDUMP_CMD_PREFIX = ['tcpdump', '-s 0', '-i {}'.format(NET_IFACE)]
 TCPDUMP_CMD_SUFFIX = ['-w tcp.pcap']
@@ -47,7 +53,7 @@ def get_stats(client, experiment_id):
 
 class Experiment():
 
-    def __init__(self, config, host, port):
+    def __init__(self, config, host, port, output_dir):
         with open(config, 'r') as f:
             print('Loading config...')
             self.config = json.loads(f.read())
@@ -58,6 +64,7 @@ class Experiment():
         self.docker = docker.from_env()
         self.containers = list()
         self.tcpdump_proc = None
+        self.output_dir = output_dir
 
         print('Config:')
         print('Experiment ID:', self.config['experiment_id'])
@@ -115,7 +122,7 @@ class Experiment():
         tcpdump = shlex.split(' '.join(TCPDUMP_CMD_PREFIX + port_cmds +
                                        TCPDUMP_CMD_SUFFIX))
 
-        self.tcpdump_proc = subprocess.Popen(tcpdump)
+        self.tcpdump_proc = subprocess.Popen(tcpdump, cwd=self.output_dir)
         if self.tcpdump_proc.poll():
             exit(-1)
 
@@ -182,7 +189,7 @@ class Experiment():
                     stats = pool.starmap(get_stats, zip(self.clients,
                                                         exp_id_list))
 
-                with open(SYSTEM_STATS, 'w') as f:
+                with open(self.output_dir + SYSTEM_STATS, 'w') as f:
                     fieldnames = ['cpu_load', 'mem_avail', 'timestamp']
                     writer = csv.DictWriter(f, fieldnames=fieldnames)
                     writer.writeheader()
@@ -190,7 +197,8 @@ class Experiment():
 
                 for stat_coll in stats:
                     client_index = stat_coll['client_id']
-                    with open(CLIENT_STATS.format(client_index), 'w') as f:
+                    with open(self.output_dir +
+                              CLIENT_STATS.format(client_index), 'w') as f:
                         json.dump(stat_coll, f)
         finally:
             if server_socket:
@@ -199,17 +207,19 @@ class Experiment():
 
 
 @click.command()
-@click.argument('experiment_config', type=click.Path(exists=True,
-                                                     dir_okay=False),
-                default=os.getcwd() + '/experiment_config.json')
-@click.option('--host', type=str, default='0.0.0.0',
+@click.argument('experiment_config',default=DEFAULT_EXPCONFIG_PATH,
+                type=click.Path(exists=True, dir_okay=False))
+@click.option('--host', type=str, default=DEFAULT_CTRLSERVER_ADDR,
               help='Addresss to which bind this server instance.',
               show_default=True)
-@click.option('--port', type=int, default=1337,
+@click.option('--port', type=int, default=DEFAULT_CTRLSERVER_PORT,
               help='Port on which to listen for incoming connection.',
               show_default=True)
-def execute(experiment_config, host, port):
-    e = Experiment(experiment_config, host, port)
+@click.option('--output_dir', default=DEFAULT_OUTPUT_DIR, show_default=True,
+              type=click.Path(dir_okay=True, file_okay=False, exists=True),
+              help='Output directory for result files.')
+def execute(experiment_config, host, port, output_dir):
+    e = Experiment(experiment_config, host, port, output_dir)
     e.init_docker()
     e.init_tcpdump()
     e.execute()

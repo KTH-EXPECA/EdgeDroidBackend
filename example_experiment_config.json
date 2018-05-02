@@ -1,7 +1,7 @@
 {
   "experiment_id": "LEGOHead2",
   "clients": 2,
-  "runs": 3,
+  "runs": 1,
   "steps": 7,
   "trace_root_url": "https://github.com/molguin92/CognitiveAssistanceTraces/releases/download/LEGOVideo2/",
   "ports": [
