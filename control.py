@@ -2,13 +2,20 @@
 import csv
 import json
 import os
+import time
 
 from client import Client
 from socket import socket, AF_INET, SOCK_STREAM
 from multiprocessing.pool import Pool
 import click
+import docker
 
 from monitor import ResourceMonitor
+
+DEFAULT_VIDEO_PORT = 9098
+DEFAULT_RESULT_PORT = 9111
+DEFAULT_CONTROL_PORT = 22222
+LEGO_DOCKER_IMG = 'molguin/gabriel-lego'
 
 
 def send_config(client):
@@ -37,11 +44,36 @@ class Experiment():
         self.clients = list()
         self.host = host
         self.port = port
+        self.docker = docker.from_env()
 
         print('Config:')
         print('Experiment ID:', self.config['experiment_id'])
         print('Client:', self.config['clients'])
         print('Runs:', self.config['runs'])
+
+        print('Spawning Docker containers...')
+        self.containers = list()
+
+        for i, port_config in enumerate(self.config['ports']):
+            print('Launching container {} of {}'
+                  .format(i+1, len(self.config['ports'])))
+
+            self.containers.append(
+                self.docker.containers.run(
+                    LEGO_DOCKER_IMG,
+                    detach=True,
+                    auto_remove=True,
+                    ports={
+                        DEFAULT_VIDEO_PORT  : port_config['video'],
+                        DEFAULT_RESULT_PORT : port_config['result'],
+                        DEFAULT_CONTROL_PORT: port_config['control']
+                    }
+                )
+            )
+
+        print('Wait for container warm up...')
+        time.sleep(5)
+        print('Initialization done')
 
     def _gen_config_for_client(self, client_index):
         c = dict()
@@ -104,7 +136,7 @@ class Experiment():
                     exp_id_list = [self.config[
                                        'experiment_id']] * len(self.clients)
                     stats = pool.starmap(get_stats, zip(self.clients,
-                                                      exp_id_list))
+                                                        exp_id_list))
 
                 with open('system_stats.csv', 'w') as f:
                     fieldnames = ['cpu_load', 'mem_avail', 'timestamp']
@@ -124,6 +156,11 @@ class Experiment():
             for client in self.clients:
                 client.close()
 
+            print('Shutting down containers...')
+            for cont in self.containers:
+                cont.kill()
+
+
 @click.command()
 @click.argument('experiment_config', type=click.Path(exists=True,
                                                      dir_okay=False),
@@ -137,6 +174,7 @@ class Experiment():
 def execute(experiment_config, host, port):
     e = Experiment(experiment_config, host, port)
     e.execute()
+
 
 if __name__ == '__main__':
     execute()
