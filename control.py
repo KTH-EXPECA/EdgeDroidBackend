@@ -24,7 +24,7 @@ CLIENT_STATS = '{:03}_stats.json'
 
 NET_IFACE = 'enp0s31f6'
 
-TCPDUMP_CMD_PREFIX = ['sudo', 'tcpdump', '-s 0', '-i {}'.format(NET_IFACE)]
+TCPDUMP_CMD_PREFIX = ['tcpdump', '-s 0', '-i {}'.format(NET_IFACE)]
 TCPDUMP_CMD_SUFFIX = ['-w tcp.pcap']
 
 
