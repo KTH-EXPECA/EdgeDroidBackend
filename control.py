@@ -15,7 +15,7 @@ import docker
 
 from monitor import ResourceMonitor
 
-LEGO_DOCKER_IMG = 'molguin/gabriel-lego'
+LEGO_DOCKER_IMG = 'jamesjue/gabriel-lego'
 SYSTEM_STATS = 'system_stats.csv'
 CLIENT_STATS = '{:02}_stats.json'
 
