@@ -2,6 +2,9 @@
 import csv
 import json
 import os
+import shlex
+import signal
+import subprocess
 import time
 
 from client import Client
@@ -16,6 +19,14 @@ DEFAULT_VIDEO_PORT = 9098
 DEFAULT_RESULT_PORT = 9111
 DEFAULT_CONTROL_PORT = 22222
 LEGO_DOCKER_IMG = 'molguin/gabriel-lego'
+SYSTEM_STATS = 'system_stats.csv'
+CLIENT_STATS = '{:03}_stats.json'
+
+NET_IFACE = 'enp0s31f6'
+
+TCPDUMP_CMD_PREFIX = ['sudo', 'tcpdump', '-s 0', '-i {}'.format(NET_IFACE)]
+TCPDUMP_CMD_SUFFIX = ['-w tcp.pcap']
+
 
 
 def send_config(client):
@@ -45,18 +56,31 @@ class Experiment():
         self.host = host
         self.port = port
         self.docker = docker.from_env()
+        self.containers = list()
+        self.tcpdump_proc = None
 
         print('Config:')
         print('Experiment ID:', self.config['experiment_id'])
         print('Client:', self.config['clients'])
         print('Runs:', self.config['runs'])
 
-        print('Spawning Docker containers...')
-        self.containers = list()
+    def shutdown(self):
+        print('Shut down!')
+        for client in self.clients:
+            client.close()
 
+        if self.tcpdump_proc:
+            self.tcpdump_proc.send_signal(signal.SIGINT)
+
+        print('Shutting down containers...')
+        for cont in self.containers:
+            cont.kill()
+
+    def init_docker(self):
+        print('Spawning Docker containers...')
         for i, port_config in enumerate(self.config['ports']):
             print('Launching container {} of {}'
-                  .format(i+1, len(self.config['ports'])))
+                  .format(i + 1, len(self.config['ports'])))
 
             self.containers.append(
                 self.docker.containers.run(
@@ -74,6 +98,26 @@ class Experiment():
         print('Wait for container warm up...')
         time.sleep(5)
         print('Initialization done')
+
+    def init_tcpdump(self):
+        print('Initializing TCP dump...')
+        port_cmds = list()
+        for port_config in self.config['ports']:
+            cmds = [
+                'port {}'.format(port_config['video']),
+                'port {}'.format(port_config['result']),
+                'port {}'.format(port_config['control']),
+            ]
+
+            port_cmds.append(' or '.join(cmds))
+
+        port_cmds = [' or '.join(port_cmds)]
+        tcpdump = shlex.split(' '.join(TCPDUMP_CMD_PREFIX + port_cmds +
+                                       TCPDUMP_CMD_SUFFIX))
+
+        self.tcpdump_proc = subprocess.Popen(tcpdump)
+        if self.tcpdump_proc.poll():
+            exit(-1)
 
     def _gen_config_for_client(self, client_index):
         c = dict()
@@ -138,7 +182,7 @@ class Experiment():
                     stats = pool.starmap(get_stats, zip(self.clients,
                                                         exp_id_list))
 
-                with open('system_stats.csv', 'w') as f:
+                with open(SYSTEM_STATS, 'w') as f:
                     fieldnames = ['cpu_load', 'mem_avail', 'timestamp']
                     writer = csv.DictWriter(f, fieldnames=fieldnames)
                     writer.writeheader()
@@ -146,19 +190,12 @@ class Experiment():
 
                 for stat_coll in stats:
                     client_index = stat_coll['client_id']
-                    with open('{:03}_stats.json'.format(client_index),
-                              'w') as f:
+                    with open(CLIENT_STATS.format(client_index), 'w') as f:
                         json.dump(stat_coll, f)
         finally:
-            print('Shut down!')
             if server_socket:
                 server_socket.close()
-            for client in self.clients:
-                client.close()
-
-            print('Shutting down containers...')
-            for cont in self.containers:
-                cont.kill()
+            self.shutdown()
 
 
 @click.command()
@@ -173,6 +210,8 @@ class Experiment():
               show_default=True)
 def execute(experiment_config, host, port):
     e = Experiment(experiment_config, host, port)
+    e.init_docker()
+    e.init_tcpdump()
     e.execute()
 
 
