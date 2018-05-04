@@ -1,5 +1,10 @@
+import operator
+from collections import namedtuple
+from matplotlib import pyplot as plt
 from results.lego_timing import LEGOTCPdumpParser
 import json
+
+Frame = namedtuple('Frame', ['id', 'rtt', 'uplink', 'downlink', 'processing'])
 
 
 def load_results(client_idx):
@@ -8,8 +13,8 @@ def load_results(client_idx):
         return json.load(f, encoding='utf-8')
 
 
-if __name__ == '__main__':
-    data = load_results(0)
+def parse_frame_stats(client_idx):
+    data = load_results(client_idx)
     video_port = data['ports']['video']
     result_port = data['ports']['result']
 
@@ -18,40 +23,130 @@ if __name__ == '__main__':
     server_in = parser.extract_incoming_timestamps(video_port)
     server_out = parser.extract_outgoing_timestamps(result_port)
 
-    print(server_in)
-    print(server_out)
-
-    # TODO: build stats for each frame:
-    # TODO: client send, server recv, server send, client recv
-
+    runs = []
     for run_idx, run in enumerate(data['runs']):
+        run_frames = []
         for frame in run['frames']:
-            id = frame['frame_id']
+            frame_id = frame['frame_id']
             client_send = frame['sent']
-            server_recv = server_in[id].pop(0)
-            server_send = server_out[id].pop(0)
+            server_recv = server_in[frame_id].pop(0)
+            server_send = server_out[frame_id].pop(0)
             client_recv = frame['recv']
 
             uplink = server_recv - client_send
             processing = server_send - server_recv
             downlink = client_recv - server_send
+            rtt = client_recv - client_send
 
-            rtt = uplink + processing + downlink
+            try:
+                assert processing > 0
+                run_frames.append(Frame(frame_id, rtt, uplink,
+                                        downlink, processing))
+            except AssertionError as e:
+                print('Recv', server_recv)
+                print('Send', server_send)
+                print('Proc', processing)
+                print('Run', run_idx)
+                print('Frame {} of {}', frame_id, len(run['frames']))
+                run_frames.append(Frame(frame_id, rtt, None, None, None))
 
-            print(
-                '''
-frame {}
-client send {}
-server recv {}
-server send {}
-client recv {}
-uplink      {}
-downlink    {}
-processing  {}
-total rtt   {}
-                '''.format(
-                    id, client_send, server_recv,
-                    server_send, client_recv, uplink,
-                    downlink, processing, rtt
-                )
-            )
+        run_frames.sort(key=operator.attrgetter('id'))
+        runs.append(run_frames)
+
+    return runs
+
+
+def plot_rtts(runs):
+    fig, [ax1, ax2] = plt.subplots(1, 2, sharey=True)
+    x_lim = 0
+    for i, run in enumerate(runs):
+        rtts = [frame.rtt for frame in run]
+        proc = [frame.processing for frame in run]
+
+        idx = [frame.id for frame in run]
+        ax1.semilogy(idx, rtts, label='Run {}'.format(i + 1))
+        ax2.semilogy(idx, proc, label='Run {}'.format(i + 1))
+
+        x_lim = max(x_lim, len(idx))
+
+    # y_lim = max(ax1.get_ylim()[-1], ax2.get_ylim()[-1])
+
+    ax1.set_xlim(-50, x_lim + 50)
+    ax2.set_xlim(-50, x_lim + 50)
+    ax1.set_xlabel('Frame index')
+    ax1.set_ylabel('Total RTT [ms]')
+    ax2.set_xlabel('Frame index')
+    ax2.set_ylabel('Processing time [ms]')
+    plt.legend()
+    plt.show()
+
+
+def plot_avg_times(runs):
+    fig, ax = plt.subplots()
+    def autolabel(rects):
+        """
+        Attach a text label above each bar displaying its height
+        """
+        for rect in rects:
+            height = rect.get_height()
+            x_pos = rect.get_x() + rect.get_width() / 2.0
+            y_pos = 0.5 * height + rect.get_y() if height > 5 else rect.get_y()
+            ax.text(x_pos, y_pos,
+                    '{:02.2f}'.format(height),
+                    ha='center', va='bottom', weight='bold')
+
+    results = []
+    x = []
+    for i, run in enumerate(runs):
+        avg_up = 0
+        count_up = 0
+        avg_down = 0
+        count_down = 0
+        avg_proc = 0
+        count_proc = 0
+        for frame in run:
+            up = frame.uplink
+            down = frame.downlink
+
+            if up and up > 0:
+                avg_up += up
+                count_up += 1
+
+            if down and down > 0:
+                avg_down += down
+                count_down += 1
+
+            if frame.processing:
+                avg_proc += frame.processing
+                count_proc += 1
+
+        avg_up = avg_up / (1.0 * count_up)
+        avg_down = avg_down / (1.0 * count_down)
+        avg_proc = avg_proc / (1.0 * count_proc)
+
+        results.append((avg_up, avg_down, avg_proc))
+        x.append('Run {}'.format(i + 1))
+
+    up = [y[0] for y in results]
+    down = [y[1] for y in results]
+    proc = [y[2] for y in results]
+
+    rects1 = ax.bar(x, up, label='Avg uplink time')
+    rects2 = ax.bar(x, proc, bottom=up, label='Avg processing time')
+    rects3 = ax.bar(x, down,
+                    bottom=[x + y for x, y in zip(up, proc)],
+                    label='Avg downlink time')
+
+    autolabel(rects1)
+    autolabel(rects2)
+    autolabel(rects3)
+
+    ax.set_ylabel('Time [ms]')
+    plt.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
+    plt.show()
+
+
+if __name__ == '__main__':
+    runs = parse_frame_stats(0)
+    plot_rtts(runs)
+    plot_avg_times(runs)

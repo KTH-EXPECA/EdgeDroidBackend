@@ -3,3 +3,6 @@ apscheduler
 click
 docker
 scapy
+matplotlib
+numpy
+scipy
