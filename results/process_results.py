@@ -71,8 +71,8 @@ def plot_rtts(data):
         proc = [frame.processing for frame in run]
 
         idx = [frame.id for frame in run]
-        ax1.semilogy(idx, rtts, label='Run {}'.format(i + 1))
-        ax2.semilogy(idx, proc, label='Run {}'.format(i + 1))
+        ax1.scatter(idx, rtts, label='Run {}'.format(i + 1), s=1)
+        ax2.scatter(idx, proc, label='Run {}'.format(i + 1), s=1)
 
         x_lim = max(x_lim, len(idx))
 
@@ -84,6 +84,9 @@ def plot_rtts(data):
     ax1.set_ylabel('Total RTT [ms]')
     ax2.set_xlabel('Frame index')
     ax2.set_ylabel('Processing time [ms]')
+    ax1.set_yscale('log')
+    ax2.set_yscale('log')
+
     plt.legend()
     plt.show()
 
