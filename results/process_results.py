@@ -1,8 +1,12 @@
+import csv
 import operator
 from collections import namedtuple
+
+import psutil
 from matplotlib import pyplot as plt
 from results.lego_timing import LEGOTCPdumpParser
 import json
+import pandas as pd
 
 Frame = namedtuple('Frame', ['id', 'rtt', 'uplink',
                              'downlink', 'processing',
@@ -169,6 +173,7 @@ def plot_task_times(data):
     ax.set_ylabel('Total task time [ms]')
     plt.show()
 
+
 def plot_task_times_from_frames(data):
     task_times = []
     x = []
@@ -180,11 +185,43 @@ def plot_task_times_from_frames(data):
         x.append('Run {}'.format(i + 1))
 
     fig, ax = plt.subplots()
-    task_times = [t/1000.0 for t in task_times]
+    task_times = [t / 1000.0 for t in task_times]
     ax.bar(x, task_times)
     ax.set_ylabel('Total task time [s]')
     plt.show()
 
+
+def plot_cpu_load():
+    df = pd.read_csv('system_stats.csv')
+    start_time = df['timestamp'][0]
+    df['timestamp'] = (df['timestamp'] - start_time) / (60 * 1000.0)
+    df['avg_cpu_load'] = df['cpu_load'].rolling(11, center=True).mean()
+
+    ax = df.plot(x='timestamp', y='cpu_load', alpha=0.5, label='CPU Load')
+    df.plot(x='timestamp', y='avg_cpu_load',
+            ax=ax, color='red', label='Avg. CPU Load')
+
+    ax.set_xlabel('Time [m]')
+    ax.set_ylabel('Load [%]')
+    plt.show()
+
+
+def plot_ram_usage():
+    df = pd.read_csv('system_stats.csv')
+    start_time = df['timestamp'][0]
+    df['timestamp'] = (df['timestamp'] - start_time) / (60 * 1000.0)
+    df['mem_avail'] = df['mem_avail'] / (1024.0 * 1024.0 * 1024)
+
+    total_ram = psutil.virtual_memory().total / (1024.0 * 1024.0 * 1024)
+    df['used_mem'] = total_ram - df['mem_avail']
+
+    ax = df.plot(x='timestamp', y='used_mem', color='orange', label='Used RAM')
+    ax.axhline(y=total_ram, color='red', label='Total RAM')
+    # ax.set_yscale('log')
+    ax.set_xlabel('Time [m]')
+    ax.set_ylabel('Memory [GiB]')
+    plt.legend()
+    plt.show()
 
 
 if __name__ == '__main__':
@@ -192,3 +229,5 @@ if __name__ == '__main__':
     plot_rtts(data)
     plot_avg_times(data)
     plot_task_times_from_frames(data)
+    plot_ram_usage()
+    plot_cpu_load()
