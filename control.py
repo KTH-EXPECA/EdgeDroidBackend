@@ -29,11 +29,11 @@ DEFAULT_RESULT_PORT = 9111
 DEFAULT_CONTROL_PORT = 22222
 NET_IFACE = 'enp0s31f6'
 
-
 TCPDUMP_CMD_PREFIX = ['tcpdump', '-s 0', '-i {}'.format(NET_IFACE)]
 TCPDUMP_CMD_SUFFIX = ['-w tcp.pcap']
 
-
+def wait_for_result(async_result):
+    async_result.wait()
 
 def send_config(client):
     client.send_config()
@@ -144,21 +144,28 @@ class Experiment():
                 server_socket.listen(self.config['clients'])
                 print('Listening on {}'.format((self.host, self.port)))
 
-                # accept N clients for the experiment
-                print('Waiting for {} clients to connect...'
-                      .format(self.config['clients']))
-                for i in range(self.config['clients']):
-                    conn, addr = server_socket.accept()
-                    self.clients.append(
-                        Client(conn, addr,
-                               config=self._gen_config_for_client(i))
-                    )
-                    print('Client {} connected.'.format(addr))
-
                 with Pool(self.config['clients']) as pool:
+                    # accept N clients for the experiment
+                    print('Waiting for {} clients to connect...'
+                          .format(self.config['clients']))
+
+                    config_send = []
+                    for i in range(self.config['clients']):
+                        conn, addr = server_socket.accept()
+                        client = Client(conn, addr,
+                                        config=self._gen_config_for_client(i))
+                        self.clients.append(client)
+                        print('Client {} connected.'.format(addr))
+                        # send configs in parallel to all clients
+                        config_send.append(
+                            pool.apply_async(send_config, args=(client,))
+                        )
+
                     # send configs in parallel to all clients
-                    print('Sending configs...')
-                    pool.map(send_config, self.clients)
+                    # print('Sending configs...')
+                    # pool.map(send_config, self.clients)
+
+                    pool.map(wait_for_result, config_send)
 
                     print('Starting resource monitor...')
                     monitor = ResourceMonitor()
@@ -207,7 +214,7 @@ class Experiment():
 
 
 @click.command()
-@click.argument('experiment_config',default=DEFAULT_EXPCONFIG_PATH,
+@click.argument('experiment_config', default=DEFAULT_EXPCONFIG_PATH,
                 type=click.Path(exists=True, dir_okay=False))
 @click.option('--host', type=str, default=DEFAULT_CTRLSERVER_ADDR,
               help='Addresss to which bind this server instance.',
