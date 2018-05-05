@@ -1,12 +1,12 @@
-import csv
+import json
 import operator
 from collections import namedtuple
 
-import psutil
-from matplotlib import pyplot as plt
-from results.lego_timing import LEGOTCPdumpParser
-import json
 import pandas as pd
+import psutil
+from scapy.all import *
+
+from results.lego_timing import LEGOTCPdumpParser
 
 Frame = namedtuple('Frame', ['id', 'rtt', 'uplink',
                              'downlink', 'processing',
@@ -222,6 +222,21 @@ def plot_ram_usage():
     ax.set_ylabel('Memory [GiB]')
     plt.legend()
     plt.show()
+
+
+def split_tcpdump(client_idx, tcpdump):
+    c_data = load_results(client_idx)
+
+    ports = c_data['ports'].values()
+    pkts = rdpcap(tcpdump)
+
+    relevant_pkts = [
+        pkt for pkt in pkts
+        if pkt[TCP].sport in ports or pkt[TCP].dport in ports
+    ]
+
+    filename = '{:02}_dump.pcap'.format(client_idx)
+    wrpcap(filename, relevant_pkts)
 
 
 if __name__ == '__main__':
