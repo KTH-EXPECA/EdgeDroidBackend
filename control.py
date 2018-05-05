@@ -8,7 +8,7 @@ import subprocess
 import time
 
 from client import Client
-from socket import socket, AF_INET, SOCK_STREAM
+from socket import *
 from multiprocessing.pool import Pool
 import click
 import docker
@@ -32,8 +32,19 @@ NET_IFACE = 'enp0s31f6'
 TCPDUMP_CMD_PREFIX = ['tcpdump', '-s 0', '-i {}'.format(NET_IFACE)]
 TCPDUMP_CMD_SUFFIX = ['-w tcp.pcap']
 
-def wait_for_result(async_result):
-    async_result.wait()
+
+def set_keepalive_linux(sock, after_idle_sec=1, interval_sec=3, max_fails=5):
+    """Set TCP keepalive on an open socket.
+
+    It activates after 1 second (after_idle_sec) of idleness,
+    then sends a keepalive ping once every 3 seconds (interval_sec),
+    and closes the connection after 5 failed ping (max_fails), or 15 seconds
+    """
+    sock.setsockopt(SOL_SOCKET, SO_KEEPALIVE, 1)
+    sock.setsockopt(IPPROTO_TCP, TCP_KEEPIDLE, after_idle_sec)
+    sock.setsockopt(IPPROTO_TCP, TCP_KEEPINTVL, interval_sec)
+    sock.setsockopt(IPPROTO_TCP, TCP_KEEPCNT, max_fails)
+
 
 def send_config(client):
     client.send_config()
@@ -152,6 +163,7 @@ class Experiment():
                     config_send = []
                     for i in range(self.config['clients']):
                         conn, addr = server_socket.accept()
+                        set_keepalive_linux(conn, max_fails=100)  # 5 minutes
                         client = Client(conn, addr,
                                         config=self._gen_config_for_client(i))
                         self.clients.append(client)
@@ -165,7 +177,8 @@ class Experiment():
                     # print('Sending configs...')
                     # pool.map(send_config, self.clients)
 
-                    pool.map(wait_for_result, config_send)
+                    for result in config_send:
+                        result.wait()
 
                     print('Starting resource monitor...')
                     monitor = ResourceMonitor()
