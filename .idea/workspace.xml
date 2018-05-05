@@ -17,19 +17,10 @@
     <SUITE FILE_PATH="coverage/GabrielClientEmulatorControl$control.coverage" NAME="control Coverage Results" MODIFIED="1525353643839" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ControlBackend$control.coverage" NAME="control Coverage Results" MODIFIED="1524753088242" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/GabrielClientEmulatorControl$lego_timing.coverage" NAME="lego_timing Coverage Results" MODIFIED="1525424641389" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/results" />
-    <SUITE FILE_PATH="coverage/GabrielClientEmulatorControl$process_results.coverage" NAME="process_results Coverage Results" MODIFIED="1525527502652" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/results" />
+    <SUITE FILE_PATH="coverage/GabrielClientEmulatorControl$process_results.coverage" NAME="process_results Coverage Results" MODIFIED="1525528792881" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/results" />
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="00_stats.json" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/results/00_stats.json">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="18">
-              <caret column="172" selection-start-column="171" selection-end-column="172" />
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file leaf-file-name="lego_timing.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/results/lego_timing.py">
           <provider selected="true" editor-type-id="text-editor">
@@ -45,8 +36,8 @@
       <file leaf-file-name="process_results.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/results/process_results.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="462">
-              <caret line="241" column="26" selection-start-line="241" selection-start-column="26" selection-end-line="241" selection-end-column="26" />
+            <state relative-caret-position="240">
+              <caret line="146" lean-forward="true" selection-start-line="146" selection-end-line="146" />
               <folding>
                 <element signature="e#0#11#0" expanded="true" />
               </folding>
@@ -408,12 +399,18 @@
       <option name="project" value="LOCAL" />
       <updated>1525527135998</updated>
     </task>
-    <option name="localTasksCounter" value="18" />
+    <task id="LOCAL-00018" summary="add function to split pcap file into client dumps">
+      <created>1525527570074</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1525527570074</updated>
+    </task>
+    <option name="localTasksCounter" value="19" />
     <servers />
   </component>
   <component name="ToolWindowManager">
     <frame x="1200" y="380" width="1920" height="1175" extended-state="6" />
-    <editor active="true" />
     <layout>
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Event Log" order="7" side_tool="true" weight="0.32979852" />
@@ -423,10 +420,10 @@
       <window_info anchor="bottom" id="Python Console" order="7" />
       <window_info anchor="bottom" id="Run" order="2" visible="true" weight="0.2140845" />
       <window_info anchor="bottom" id="Terminal" order="7" weight="0.30798122" />
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.17395833" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.17395833" />
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
       <window_info anchor="right" id="Database" order="3" />
-      <window_info anchor="right" id="SciView" order="3" visible="true" weight="0.28645834" />
+      <window_info active="true" anchor="right" id="SciView" order="3" visible="true" weight="0.35885417" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.399623" />
@@ -465,7 +462,8 @@
     <MESSAGE value="system stats" />
     <MESSAGE value="send config to clients asap" />
     <MESSAGE value="keep socket alive" />
-    <option name="LAST_COMMIT_MESSAGE" value="keep socket alive" />
+    <MESSAGE value="add function to split pcap file into client dumps" />
+    <option name="LAST_COMMIT_MESSAGE" value="add function to split pcap file into client dumps" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -473,13 +471,6 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/requirements.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="144">
-          <caret line="8" column="6" selection-start-line="8" selection-start-column="6" selection-end-line="8" selection-end-column="6" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/results/process_results.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="4032">
@@ -781,10 +772,13 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/results/04_stats.json">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
     <entry file="file://$PROJECT_DIR$/results/process_results.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="462">
-          <caret line="241" column="26" selection-start-line="241" selection-start-column="26" selection-end-line="241" selection-end-column="26" />
+        <state relative-caret-position="240">
+          <caret line="146" lean-forward="true" selection-start-line="146" selection-end-line="146" />
           <folding>
             <element signature="e#0#11#0" expanded="true" />
           </folding>

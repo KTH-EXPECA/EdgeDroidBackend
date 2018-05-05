@@ -25,7 +25,7 @@ def parse_client_stats(client_idx):
     video_port = data['ports']['video']
     result_port = data['ports']['result']
 
-    parser = LEGOTCPdumpParser('tcp.pcap')
+    parser = LEGOTCPdumpParser('{:02}_dump.pcap'.format(client_idx))
 
     server_in = parser.extract_incoming_timestamps(video_port)
     server_out = parser.extract_outgoing_timestamps(result_port)
@@ -91,7 +91,8 @@ def plot_rtts(data):
     ax1.set_yscale('log')
     ax2.set_yscale('log')
 
-    plt.legend()
+    plt.title('Client {}'.format(data['client_id']))
+    plt.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
     plt.show()
 
 
@@ -159,6 +160,7 @@ def plot_avg_times(data):
     autolabel(rects3)
 
     ax.set_ylabel('Time [ms]')
+    plt.title('Client {}'.format(data['client_id']))
     plt.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
     plt.show()
 
@@ -240,9 +242,10 @@ def split_tcpdump(client_idx, tcpdump):
 
 
 if __name__ == '__main__':
-    data = parse_client_stats(0)
-    plot_rtts(data)
-    plot_avg_times(data)
-    plot_task_times_from_frames(data)
+    for i in range(5):
+        data = parse_client_stats(i)
+        plot_rtts(data)
+        plot_avg_times(data)
+        #plot_task_times_from_frames(data)
     plot_ram_usage()
     plot_cpu_load()
