@@ -112,6 +112,7 @@ class Experiment:
                     }
                 )
             )
+            time.sleep(1)
 
         print('Wait for container warm up...')
         time.sleep(5)
@@ -215,10 +216,8 @@ class Experiment:
                         # effects on the processing times...
                         print('Execute experiment!')
                         for client in self.clients:
+                            time.sleep(constants.DEFAULT_STAGGER_INTERVAL)
                             client.run_experiment()
-
-                            if client != self.clients[-1]:
-                                time.sleep(constants.DEFAULT_STAGGER_INTERVAL)
 
                         self.clients.clear()
                         print('Waiting for {} clients to reconnect...'
