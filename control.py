@@ -6,6 +6,7 @@ import signal
 import subprocess
 import time
 from multiprocessing.pool import Pool
+from random import shuffle
 from socket import *
 
 import click
@@ -215,6 +216,10 @@ class Experiment:
                         # synchronous
                         # effects on the processing times...
                         print('Execute experiment!')
+
+                        # shuffle clients before each run
+                        shuffle(self.clients)
+
                         for client in self.clients:
                             time.sleep(constants.DEFAULT_STAGGER_INTERVAL)
                             client.run_experiment()

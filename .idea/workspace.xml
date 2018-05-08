@@ -36,8 +36,8 @@
       <file leaf-file-name="control.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/control.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="136">
-              <caret line="189" column="56" selection-start-line="189" selection-start-column="56" selection-end-line="189" selection-end-column="56" />
+            <state relative-caret-position="450">
+              <caret line="220" column="45" lean-forward="true" selection-start-line="220" selection-start-column="45" selection-end-line="220" selection-end-column="45" />
               <folding>
                 <element signature="e#23#33#0" expanded="true" />
               </folding>
@@ -141,6 +141,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -152,7 +153,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -444,7 +444,14 @@
       <option name="project" value="LOCAL" />
       <updated>1525794217257</updated>
     </task>
-    <option name="localTasksCounter" value="24" />
+    <task id="LOCAL-00024" summary="limit pool to 2 processes">
+      <created>1525795895718</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1525795895719</updated>
+    </task>
+    <option name="localTasksCounter" value="25" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -453,16 +460,17 @@
     <layout>
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Event Log" order="7" side_tool="true" weight="0.32979852" />
+      <window_info anchor="right" x="0" y="0" width="430" height="975" id="Documentation" order="6" sideWeight="0.50140846" side_tool="true" visible="true" weight="0.2328125" />
       <window_info anchor="right" id="Json Parser" order="3" weight="0.3296875" />
       <window_info anchor="bottom" id="Database Changes" order="8" show_stripe_button="false" />
       <window_info anchor="bottom" id="Version Control" order="7" />
       <window_info anchor="bottom" id="Python Console" order="7" />
       <window_info anchor="bottom" id="Run" order="2" weight="0.40657276" />
-      <window_info active="true" anchor="bottom" id="Terminal" order="7" visible="true" weight="0.26197183" />
+      <window_info anchor="bottom" id="Terminal" order="7" weight="0.26148078" />
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.17395833" />
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
-      <window_info anchor="right" id="Database" order="3" />
-      <window_info anchor="right" id="SciView" order="3" sideWeight="0.49924126" visible="true" weight="0.2328125" />
+      <window_info anchor="right" id="Database" order="4" />
+      <window_info active="true" anchor="right" id="SciView" order="5" sideWeight="0.49859154" visible="true" weight="0.2328125" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.399623" />
@@ -470,7 +478,6 @@
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
-      <window_info anchor="right" x="0" y="0" width="430" height="975" id="Documentation" order="3" sideWeight="0.5007587" side_tool="true" visible="true" weight="0.2328125" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.32957748" />
@@ -508,7 +515,8 @@
     <MESSAGE value="redesign working for multiple clients" />
     <MESSAGE value="stagger interval set to 1.0 second" />
     <MESSAGE value="keepalive" />
-    <option name="LAST_COMMIT_MESSAGE" value="keepalive" />
+    <MESSAGE value="limit pool to 2 processes" />
+    <option name="LAST_COMMIT_MESSAGE" value="limit pool to 2 processes" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -820,8 +828,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/control.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="136">
-          <caret line="189" column="56" selection-start-line="189" selection-start-column="56" selection-end-line="189" selection-end-column="56" />
+        <state relative-caret-position="450">
+          <caret line="220" column="45" lean-forward="true" selection-start-line="220" selection-start-column="45" selection-end-line="220" selection-end-column="45" />
           <folding>
             <element signature="e#23#33#0" expanded="true" />
           </folding>
