@@ -225,6 +225,8 @@ class Experiment:
 
                         for i in range(self.config['clients']):
                             conn, addr = server_socket.accept()
+                            set_keepalive_linux(conn,
+                                                max_fails=100)  # 5 minutes
                             self.clients.append(Client(conn, addr))
                             print(
                                 '{} out of {} clients '
