@@ -1,36 +1,20 @@
 #!/usr/bin/env python3
 import csv
 import json
-import os
 import shlex
 import signal
 import subprocess
 import time
-
-from client import Client
-from socket import *
 from multiprocessing.pool import Pool
+from socket import *
+
 import click
 import docker
 
+import constants
+import os
+from client import Client
 from monitor import ResourceMonitor
-
-LEGO_DOCKER_IMG = 'jamesjue/gabriel-lego'
-SYSTEM_STATS = 'system_stats.csv'
-CLIENT_STATS = '{:02}_stats.json'
-
-# defaults
-DEFAULT_OUTPUT_DIR = '{}/results/'.format(os.getcwd())
-DEFAULT_EXPCONFIG_PATH = '{}/experiment_config.json'.format(os.getcwd())
-DEFAULT_CTRLSERVER_ADDR = '0.0.0.0'
-DEFAULT_CTRLSERVER_PORT = 1337
-DEFAULT_VIDEO_PORT = 9098
-DEFAULT_RESULT_PORT = 9111
-DEFAULT_CONTROL_PORT = 22222
-NET_IFACE = 'enp0s31f6'
-
-TCPDUMP_CMD_PREFIX = ['tcpdump', '-s 0', '-i {}'.format(NET_IFACE)]
-TCPDUMP_CMD_SUFFIX = ['-w tcp.pcap']
 
 
 def set_keepalive_linux(sock, after_idle_sec=1, interval_sec=3, max_fails=5):
@@ -50,6 +34,10 @@ def send_config(client):
     client.send_config()
 
 
+def fetch_traces(client):
+    client.fetch_traces()
+
+
 def run_exp(client):
     client.run_experiment()
 
@@ -62,7 +50,7 @@ def get_stats(client, experiment_id):
     return client.get_remote_stats(experiment_id)
 
 
-class Experiment():
+class Experiment:
 
     def __init__(self, config, host, port, output_dir):
         with open(config, 'r') as f:
@@ -84,17 +72,29 @@ class Experiment():
 
     def shutdown(self):
         print('Shut down!')
-        for client in self.clients:
-            client.close()
 
-        if self.tcpdump_proc:
-            self.tcpdump_proc.send_signal(signal.SIGINT)
+        try:
+            for client in self.clients:
+                client.shutdown()
+        except Exception as e:
+            print('Something went wrong while shutting down clients')
+            print(e)
 
-        print('Shutting down containers...')
-        for cont in self.containers:
-            cont.kill()
+        try:
+            if self.tcpdump_proc:
+                self.tcpdump_proc.send_signal(signal.SIGINT)
+        except Exception as e:
+            print('Something went wrong while shutting down TCPDUMP')
+            print(e)
 
-    def init_docker(self):
+        try:
+            for cont in self.containers:
+                cont.kill()
+        except Exception as e:
+            print('Something went wrong while shutting down containers')
+            print(e)
+
+    def _init_docker(self):
         print('Spawning Docker containers...')
         for i, port_config in enumerate(self.config['ports']):
             print('Launching container {} of {}'
@@ -102,13 +102,13 @@ class Experiment():
 
             self.containers.append(
                 self.docker.containers.run(
-                    LEGO_DOCKER_IMG,
+                    constants.LEGO_DOCKER_IMG,
                     detach=True,
                     auto_remove=True,
                     ports={
-                        DEFAULT_VIDEO_PORT  : port_config['video'],
-                        DEFAULT_RESULT_PORT : port_config['result'],
-                        DEFAULT_CONTROL_PORT: port_config['control']
+                        constants.DEFAULT_VIDEO_PORT  : port_config['video'],
+                        constants.DEFAULT_RESULT_PORT : port_config['result'],
+                        constants.DEFAULT_CONTROL_PORT: port_config['control']
                     }
                 )
             )
@@ -117,7 +117,7 @@ class Experiment():
         time.sleep(5)
         print('Initialization done')
 
-    def init_tcpdump(self):
+    def _init_tcpdump(self, run_path):
         print('Initializing TCP dump...')
         port_cmds = list()
         for port_config in self.config['ports']:
@@ -130,36 +130,39 @@ class Experiment():
             port_cmds.append(' or '.join(cmds))
 
         port_cmds = [' or '.join(port_cmds)]
-        tcpdump = shlex.split(' '.join(TCPDUMP_CMD_PREFIX + port_cmds +
-                                       TCPDUMP_CMD_SUFFIX))
+        tcpdump = shlex.split(' '.join(constants.TCPDUMP_CMD_PREFIX +
+                                       port_cmds +
+                                       constants.TCPDUMP_CMD_SUFFIX))
 
-        self.tcpdump_proc = subprocess.Popen(tcpdump, cwd=self.output_dir)
+        self.tcpdump_proc = subprocess.Popen(tcpdump, cwd=run_path)
         if self.tcpdump_proc.poll():
-            exit(-1)
+            raise RuntimeError('Could not start TCPDUMP!')
 
     def _gen_config_for_client(self, client_index):
         c = dict()
         c['experiment_id'] = self.config['experiment_id']
         c['client_id'] = client_index
-        c['runs'] = self.config['runs']
+        # c['runs'] = self.config['runs']
         c['steps'] = self.config['steps']
         c['trace_root_url'] = self.config['trace_root_url']
         c['ports'] = self.config['ports'][client_index]
         return c
 
     def execute(self):
+        self._init_docker()
         server_socket = None
         try:
             with socket(AF_INET, SOCK_STREAM) as server_socket:
                 server_socket.bind((self.host, self.port))
                 server_socket.listen(self.config['clients'])
+                server_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
                 print('Listening on {}'.format((self.host, self.port)))
 
-                with Pool(self.config['clients']) as pool:
-                    # accept N clients for the experiment
-                    print('Waiting for {} clients to connect...'
-                          .format(self.config['clients']))
+                # accept N clients for the experiment
+                print('Waiting for {} clients to connect...'
+                      .format(self.config['clients']))
 
+                with Pool(2) as pool:
                     config_send = []
                     for i in range(self.config['clients']):
                         conn, addr = server_socket.accept()
@@ -167,83 +170,129 @@ class Experiment():
                         client = Client(conn, addr,
                                         config=self._gen_config_for_client(i))
                         self.clients.append(client)
-                        print('Client {} connected.'.format(addr))
-                        # send configs in parallel to all clients
+
+                        print('{} out of {} clients connected: {}:{}'.format(
+                            i + 1, self.config['clients'], *addr
+                        ))
+
                         config_send.append(
                             pool.apply_async(send_config, args=(client,))
                         )
 
-                    # send configs in parallel to all clients
-                    # print('Sending configs...')
-                    # pool.map(send_config, self.clients)
-
                     for result in config_send:
                         result.wait()
 
-                    print('Starting resource monitor...')
-                    monitor = ResourceMonitor()
-                    monitor.start()
+                    # have the clients fetch traces 2 at the time to avoid
+                    # congestion in the network
+                    pool.map(fetch_traces, self.clients)
 
-                    # all clients are instantiated, now let's run the experiment
-                    print('Execute experiment!')
-                    pool.map(run_exp, self.clients)
-                    pool.map(close_conn, self.clients)
+                with Pool(self.config['clients']) as pool:
 
-                    self.clients.clear()
-                    print('Waiting for {} clients to reconnect...'
-                          .format(self.config['clients']))
-                    for i in range(self.config['clients']):
-                        conn, addr = server_socket.accept()
-                        self.clients.append(Client(conn, addr))
-                        print('Client {} reconnected.'.format(addr))
+                    for r in range(self.config['runs']):
+                        print('Executing run {} out of {}'.format(
+                            r + 1, self.config['runs']
+                        ))
 
-                    # all clients reconnected
-                    print('Shut down monitor.')
-                    system_stats = monitor.shutdown()
-                    # pool.map(lambda c: c.get_remote_config(
-                    #    self.config['experiment_id']), self.clients)
+                        run_path = self.output_dir + '/run_{}/'.format(r + 1)
+                        if os.path.exists(run_path):
+                            if not os.path.isdir(run_path):
+                                raise RuntimeError('Output path {} already '
+                                                   'exists and is not a '
+                                                   'directory!'.format(run_path)
+                                                   )
+                        else:
+                            os.mkdir(run_path)
 
-                    print('Get stats from clients!')
-                    exp_id_list = [self.config[
-                                       'experiment_id']] * len(self.clients)
-                    stats = pool.starmap(get_stats, zip(self.clients,
-                                                        exp_id_list))
+                        print('Starting resource monitor...')
+                        monitor = ResourceMonitor()
+                        monitor.start()
 
-                with open(self.output_dir + SYSTEM_STATS, 'w') as f:
-                    fieldnames = ['cpu_load', 'mem_avail', 'timestamp']
-                    writer = csv.DictWriter(f, fieldnames=fieldnames)
-                    writer.writeheader()
-                    writer.writerows(system_stats)
+                        self._init_tcpdump(run_path)
 
-                for stat_coll in stats:
-                    client_index = stat_coll['client_id']
-                    with open(self.output_dir +
-                              CLIENT_STATS.format(client_index), 'w') as f:
-                        json.dump(stat_coll, f)
+                        # All clients are ready, now let's run the experiment!
+                        # Stagger client experiment start to avoid weird
+                        # synchronous
+                        # effects on the processing times...
+                        print('Execute experiment!')
+                        for client in self.clients:
+                            client.run_experiment()
+
+                            if client != self.clients[-1]:
+                                time.sleep(constants.DEFAULT_STAGGER_INTERVAL)
+
+                        self.clients.clear()
+                        print('Waiting for {} clients to reconnect...'
+                              .format(self.config['clients']))
+
+                        for i in range(self.config['clients']):
+                            conn, addr = server_socket.accept()
+                            self.clients.append(Client(conn, addr))
+                            print(
+                                '{} out of {} clients '
+                                'reconnected: {}:{}'.format(
+                                    i + 1, self.config['clients'], *addr
+                                )
+                            )
+
+                        # all clients reconnected
+                        print('Terminate TCPDUMP')
+                        self.tcpdump_proc.send_signal(signal.SIGINT)
+
+                        print('Shut down monitor.')
+                        system_stats = monitor.shutdown()
+
+                        print('Get stats from clients!')
+                        exp_id_list = [self.config[
+                                           'experiment_id']] * len(self.clients)
+                        stats = pool.starmap(get_stats,
+                                             zip(self.clients, exp_id_list))
+
+                        # store this runs' system stats
+                        with open(run_path + constants.SYSTEM_STATS, 'w') as f:
+                            fieldnames = ['cpu_load', 'mem_avail', 'timestamp']
+                            writer = csv.DictWriter(f, fieldnames=fieldnames)
+                            writer.writeheader()
+                            writer.writerows(system_stats)
+
+                        # store the client stats
+                        for stat_coll in stats:
+                            client_index = stat_coll['client_id']
+                            with open(run_path +
+                                      constants.CLIENT_STATS.format(
+                                          client_index
+                                      ), 'w') as f:
+                                json.dump(stat_coll, f)
+
         finally:
-            if server_socket:
-                server_socket.close()
+            try:
+                if server_socket:
+                    # server_socket.shutdown(SHUT_RDWR)
+                    server_socket.close()
+            except Exception as e:
+                print('Error closing server socket.')
+                print(e)
+
             self.shutdown()
 
 
 @click.command()
-@click.argument('experiment_config', default=DEFAULT_EXPCONFIG_PATH,
+@click.argument('experiment_config', default=constants.DEFAULT_EXPCONFIG_PATH,
                 type=click.Path(exists=True, dir_okay=False))
-@click.option('--host', type=str, default=DEFAULT_CTRLSERVER_ADDR,
+@click.option('--host', type=str, default=constants.DEFAULT_CONTROLSERVER_HOST,
               help='Addresss to which bind this server instance.',
               show_default=True)
-@click.option('--port', type=int, default=DEFAULT_CTRLSERVER_PORT,
+@click.option('--port', type=int, default=constants.DEFAULT_CONTROLSERVER_PORT,
               help='Port on which to listen for incoming connection.',
               show_default=True)
-@click.option('--output_dir', default=DEFAULT_OUTPUT_DIR, show_default=True,
+@click.option('--output_dir', default=constants.DEFAULT_OUTPUT_DIR,
+              show_default=True,
               type=click.Path(dir_okay=True, file_okay=False, exists=True),
               help='Output directory for result files.')
 def execute(experiment_config, host, port, output_dir):
     e = Experiment(experiment_config, host, port, output_dir)
-    e.init_docker()
-    e.init_tcpdump()
     e.execute()
 
 
 if __name__ == '__main__':
     execute()
+    # TODO: post processing here
