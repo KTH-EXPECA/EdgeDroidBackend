@@ -36,8 +36,8 @@
       <file leaf-file-name="control.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/control.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="360">
-              <caret line="228" column="75" selection-start-line="228" selection-start-column="75" selection-end-line="228" selection-end-column="75" />
+            <state relative-caret-position="136">
+              <caret line="189" column="56" selection-start-line="189" selection-start-column="56" selection-end-line="189" selection-end-column="56" />
               <folding>
                 <element signature="e#23#33#0" expanded="true" />
               </folding>
@@ -48,7 +48,7 @@
       <file leaf-file-name="constants.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/constants.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="325">
+            <state relative-caret-position="468">
               <caret line="26" column="28" selection-start-line="26" selection-start-column="28" selection-end-line="26" selection-end-column="28" />
             </state>
           </provider>
@@ -437,7 +437,14 @@
       <option name="project" value="LOCAL" />
       <updated>1525791090501</updated>
     </task>
-    <option name="localTasksCounter" value="23" />
+    <task id="LOCAL-00023" summary="keepalive">
+      <created>1525794217257</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1525794217257</updated>
+    </task>
+    <option name="localTasksCounter" value="24" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -451,11 +458,11 @@
       <window_info anchor="bottom" id="Version Control" order="7" />
       <window_info anchor="bottom" id="Python Console" order="7" />
       <window_info anchor="bottom" id="Run" order="2" weight="0.40657276" />
-      <window_info anchor="bottom" id="Terminal" order="7" visible="true" weight="0.38122067" />
+      <window_info active="true" anchor="bottom" id="Terminal" order="7" visible="true" weight="0.26197183" />
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.17395833" />
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
       <window_info anchor="right" id="Database" order="3" />
-      <window_info active="true" anchor="right" id="SciView" order="3" sideWeight="0.49924126" visible="true" weight="0.2328125" />
+      <window_info anchor="right" id="SciView" order="3" sideWeight="0.49924126" visible="true" weight="0.2328125" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.399623" />
@@ -500,7 +507,8 @@
     <MESSAGE value="works for 1 client" />
     <MESSAGE value="redesign working for multiple clients" />
     <MESSAGE value="stagger interval set to 1.0 second" />
-    <option name="LAST_COMMIT_MESSAGE" value="stagger interval set to 1.0 second" />
+    <MESSAGE value="keepalive" />
+    <option name="LAST_COMMIT_MESSAGE" value="keepalive" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -805,15 +813,15 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/constants.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="325">
+        <state relative-caret-position="468">
           <caret line="26" column="28" selection-start-line="26" selection-start-column="28" selection-end-line="26" selection-end-column="28" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/control.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="360">
-          <caret line="228" column="75" selection-start-line="228" selection-start-column="75" selection-end-line="228" selection-end-column="75" />
+        <state relative-caret-position="136">
+          <caret line="189" column="56" selection-start-line="189" selection-start-column="56" selection-end-line="189" selection-end-column="56" />
           <folding>
             <element signature="e#23#33#0" expanded="true" />
           </folding>

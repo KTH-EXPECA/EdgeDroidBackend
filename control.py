@@ -176,6 +176,7 @@ class Experiment:
                             i + 1, self.config['clients'], *addr
                         ))
 
+                        print("Sending configs...")
                         config_send.append(
                             pool.apply_async(send_config, args=(client,))
                         )
@@ -185,9 +186,8 @@ class Experiment:
 
                     # have the clients fetch traces 2 at the time to avoid
                     # congestion in the network
+                    print("Triggering trace download...")
                     pool.map(fetch_traces, self.clients)
-
-                with Pool(self.config['clients']) as pool:
 
                     for r in range(self.config['runs']):
                         print('Executing run {} out of {}'.format(
