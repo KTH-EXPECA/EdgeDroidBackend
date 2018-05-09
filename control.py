@@ -5,6 +5,7 @@ import shlex
 import signal
 import subprocess
 import time
+from multiprocessing import Process, Lock, RLock, Condition, Value
 from multiprocessing.pool import Pool
 from random import shuffle
 from socket import *
@@ -61,18 +62,22 @@ class Experiment:
         self.clients = list()
         self.host = host
         self.port = port
-        self.docker = docker.from_env()
-        self.containers = list()
         self.tcpdump_proc = None
+        self.docker_running = Value('B')
+        self.docker_proc = None
         self.output_dir = output_dir
+
+        self.docker_cond = Condition(RLock())
 
         print('Config:')
         print('Experiment ID:', self.config['experiment_id'])
         print('Client:', self.config['clients'])
         print('Runs:', self.config['runs'])
 
-    def shutdown(self):
+    def shutdown(self, e=None):
         print('Shut down!')
+        if e:
+            print(e)
 
         try:
             for client in self.clients:
@@ -89,35 +94,56 @@ class Experiment:
             print(e)
 
         try:
-            for cont in self.containers:
-                cont.kill()
+            with self.docker_cond:
+                self.docker_running.value = 0
+                self.docker_cond.notify_all()
+                self.docker_proc.join()
         except Exception as e:
-            print('Something went wrong while shutting down containers')
+            print('Something went wrong while shutting down Docker containers')
             print(e)
 
-    def _init_docker(self):
+    @staticmethod
+    def _init_docker(config, cond, running):
         print('Spawning Docker containers...')
-        for i, port_config in enumerate(self.config['ports']):
-            print('Launching container {} of {}'
-                  .format(i + 1, len(self.config['ports'])))
+        dck = docker.from_env()
+        containers = list()
+        try:
+            for i, port_config in enumerate(config['ports']):
+                print('Launching container {} of {}'
+                      .format(i + 1, len(config['ports'])))
 
-            self.containers.append(
-                self.docker.containers.run(
-                    constants.LEGO_DOCKER_IMG,
-                    detach=True,
-                    auto_remove=True,
-                    ports={
-                        constants.DEFAULT_VIDEO_PORT  : port_config['video'],
-                        constants.DEFAULT_RESULT_PORT : port_config['result'],
-                        constants.DEFAULT_CONTROL_PORT: port_config['control']
-                    }
+                containers.append(
+                    dck.containers.run(
+                        constants.LEGO_DOCKER_IMG,
+                        detach=True,
+                        auto_remove=True,
+                        ports={
+                            constants.DEFAULT_VIDEO_PORT  : port_config[
+                                'video'],
+                            constants.DEFAULT_RESULT_PORT : port_config[
+                                'result'],
+                            constants.DEFAULT_CONTROL_PORT: port_config[
+                                'control']
+                        }
+                    )
                 )
-            )
-            time.sleep(1)
 
-        print('Wait for container warm up...')
-        time.sleep(5)
-        print('Initialization done')
+            print('Wait for container warm up...')
+            time.sleep(5)
+            print('Initialization done')
+
+            with cond:
+                while running.value == 1:
+                    cond.wait()
+        except InterruptedError:
+            pass
+        except Exception as e:
+            print("Error while spawning Docker containers!")
+            raise e
+        finally:
+            print('Shutting down containers...')
+            for cont in containers:
+                cont.kill()
 
     def _init_tcpdump(self, run_path):
         print('Initializing TCP dump...')
@@ -151,20 +177,30 @@ class Experiment:
         return c
 
     def execute(self):
-        self._init_docker()
         server_socket = None
+        error = None
         try:
             with socket(AF_INET, SOCK_STREAM) as server_socket:
                 server_socket.bind((self.host, self.port))
                 server_socket.listen(self.config['clients'])
                 server_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-                print('Listening on {}'.format((self.host, self.port)))
+                print('Listening on {}:{}'.format(self.host, self.port))
 
                 # accept N clients for the experiment
                 print('Waiting for {} clients to connect...'
                       .format(self.config['clients']))
 
                 with Pool(2) as pool:
+
+                    self.docker_running.value = 1
+                    self.docker_proc = Process(target=Experiment._init_docker,
+                                               args=(
+                                                   self.config,
+                                                   self.docker_cond,
+                                                   self.docker_running
+                                               ))
+                    self.docker_proc.start()
+
                     config_send = []
                     for i in range(self.config['clients']):
                         conn, addr = server_socket.accept()
@@ -268,7 +304,8 @@ class Experiment:
                                           client_index
                                       ), 'w') as f:
                                 json.dump(stat_coll, f)
-
+        except Exception as e:
+            error = e
         finally:
             try:
                 if server_socket:
@@ -278,7 +315,7 @@ class Experiment:
                 print('Error closing server socket.')
                 print(e)
 
-            self.shutdown()
+            self.shutdown(e=error)
 
 
 @click.command()

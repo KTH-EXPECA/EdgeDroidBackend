@@ -90,7 +90,7 @@ class Client():
 
         # check that experiment id matches
         if self.stats['experiment_id'] != experiment_id:
-            buf = struct.pack('>I', self.error_msg)
+            buf = struct.pack('>I', constants.STATUS_ERROR)
             self.conn.sendall(buf)
             raise RuntimeError('Experiment ID\'s do not match!')
 
