@@ -89,14 +89,14 @@ class Client():
         self.stats = recvJSON(self.conn)
 
         # check that experiment id matches
-        if self.stats['experiment_id'] != experiment_id:
-            buf = struct.pack('>I', constants.STATUS_ERROR)
-            self.conn.sendall(buf)
-            raise RuntimeError('Experiment ID\'s do not match!')
-
-        self.config = dict()
-        self.config['client_id'] = self.stats['client_id']
-        self.config['experiment_id'] = self.stats['experiment_id']
+        # if self.stats['experiment_id'] != experiment_id:
+        #     buf = struct.pack('>I', constants.STATUS_ERROR)
+        #     self.conn.sendall(buf)
+        #     raise RuntimeError('Experiment ID\'s do not match!')
+        #
+        # self.config = dict()
+        # self.config['client_id'] = self.stats['client_id']
+        # self.config['experiment_id'] = self.stats['experiment_id']
 
         return self.stats
 
@@ -128,7 +128,23 @@ class Client():
         self._wait_for_confirmation()
 
     def run_experiment(self):
+        print('Client {} starting experiment...'.format(self.config['client_id']))
         buf = struct.pack('>I', constants.CMD_START_EXP)
         self.conn.sendall(buf)
         self._wait_for_confirmation()
-        self.close()
+        # self.close()
+
+    def wait_for_experiment_finish(self):
+        confirmation_b = recvall(self.conn, 4)
+        (confirmation,) = struct.unpack('>I', confirmation_b)
+        if confirmation != constants.MSG_EXPERIMENT_FINISH:
+            raise RuntimeError(
+                'Client {}: error on experiment finish!'.format(self.addr))
+        print('Client {} done!'.format(self.config['client_id']))
+
+    def ntp_sync(self):
+        buf = struct.pack('>I', constants.CMD_SYNC_NTP)
+        self.conn.sendall(buf)
+        self._wait_for_confirmation()
+
+

@@ -5,16 +5,17 @@ import shlex
 import signal
 import subprocess
 import time
-from multiprocessing import Process, Lock, RLock, Condition, Value
+from multiprocessing import Barrier, Process
 from multiprocessing.pool import Pool
 from random import shuffle
 from socket import *
 
+import os
+import ntplib
 import click
 import docker
 
 import constants
-import os
 from client import Client
 from monitor import ResourceMonitor
 
@@ -40,12 +41,19 @@ def fetch_traces(client):
     client.fetch_traces()
 
 
-def run_exp(client):
+def run_exp(client_idx, client):
+    time.sleep(client_idx * constants.DEFAULT_STAGGER_INTERVAL)
     client.run_experiment()
+    client.wait_for_experiment_finish()
+
 
 
 def close_conn(client):
     client.close()
+
+
+def ntp_sync(client):
+    client.ntp_sync()
 
 
 def get_stats(client, experiment_id):
@@ -58,21 +66,46 @@ class Experiment:
         with open(config, 'r') as f:
             print('Loading config...')
             self.config = json.loads(f.read())
+            self._validate_config()
 
         self.clients = list()
         self.host = host
         self.port = port
         self.tcpdump_proc = None
-        self.docker_running = Value('B')
-        self.docker_proc = None
         self.output_dir = output_dir
 
-        self.docker_cond = Condition(RLock())
+        self.docker_barrier = Barrier(2)
+        self.docker_proc = Process(target=Experiment._init_docker,
+                                   args=(self.config, self.docker_barrier))
+
+        self.ntp_client = ntplib.NTPClient()
+        self.offset = 0
 
         print('Config:')
         print('Experiment ID:', self.config['experiment_id'])
         print('Client:', self.config['clients'])
         print('Runs:', self.config['runs'])
+
+    def _validate_config(self):
+        try:
+            v = self.config['experiment_id']
+            v = self.config['clients']
+            v = self.config['runs']
+            v = self.config['steps']
+            v = self.config['trace_root_url']
+            v = self.config['ntp_server']
+            p = self.config['ports']
+            assert type(p) == list
+            assert len(p) == self.config['clients']
+
+            for p_config in p:
+                v = p_config['video']
+                v = p_config['result']
+                v = p_config['control']
+
+        except Exception as e:
+            print("Invalid configuration file.")
+            self.shutdown(e)
 
     def shutdown(self, e=None):
         print('Shut down!')
@@ -94,16 +127,15 @@ class Experiment:
             print(e)
 
         try:
-            with self.docker_cond:
-                self.docker_running.value = 0
-                self.docker_cond.notify_all()
+            self.docker_barrier.wait()
+            if self.docker_proc:
                 self.docker_proc.join()
         except Exception as e:
             print('Something went wrong while shutting down Docker containers')
             print(e)
 
     @staticmethod
-    def _init_docker(config, cond, running):
+    def _init_docker(config, barrier):
         print('Spawning Docker containers...')
         dck = docker.from_env()
         containers = list()
@@ -132,9 +164,8 @@ class Experiment:
             time.sleep(5)
             print('Initialization done')
 
-            with cond:
-                while running.value == 1:
-                    cond.wait()
+            barrier.wait()
+
         except InterruptedError:
             pass
         except Exception as e:
@@ -174,7 +205,30 @@ class Experiment:
         c['steps'] = self.config['steps']
         c['trace_root_url'] = self.config['trace_root_url']
         c['ports'] = self.config['ports'][client_index]
+        c['ntp_server'] = self.config['ntp_server']
         return c
+
+    def _pollNTPServer(self):
+        print('Getting NTP offset')
+        sync_cnt = 0
+        cum_offset = 0
+        while (sync_cnt < constants.DEFAULT_NTP_POLL_COUNT):
+            try:
+                res = self.ntp_client.request(
+                    self.config['ntp_server'],
+                    version=4
+                )
+
+                cum_offset += res.offset
+                sync_cnt += 1
+            except ntplib.NTPException:
+                continue
+
+        self.offset = (cum_offset * 1000.0) / sync_cnt
+        # convert to milliseconds
+
+        print('Got NTP offset from ', self.config['ntp_server'])
+        print('Offset: {} ms'.format(self.offset))
 
     def execute(self):
         server_socket = None
@@ -191,14 +245,6 @@ class Experiment:
                       .format(self.config['clients']))
 
                 with Pool(2) as pool:
-
-                    self.docker_running.value = 1
-                    self.docker_proc = Process(target=Experiment._init_docker,
-                                               args=(
-                                                   self.config,
-                                                   self.docker_cond,
-                                                   self.docker_running
-                                               ))
                     self.docker_proc.start()
 
                     config_send = []
@@ -213,7 +259,7 @@ class Experiment:
                             i + 1, self.config['clients'], *addr
                         ))
 
-                        print("Sending configs...")
+                        print("Sending config...")
                         config_send.append(
                             pool.apply_async(send_config, args=(client,))
                         )
@@ -245,6 +291,11 @@ class Experiment:
                         monitor = ResourceMonitor()
                         monitor.start()
 
+                        self._pollNTPServer()
+
+                        print('Trigger client NTP sync')
+                        pool.map(ntp_sync, self.clients)
+
                         self._init_tcpdump(run_path)
 
                         # All clients are ready, now let's run the experiment!
@@ -256,25 +307,30 @@ class Experiment:
                         # shuffle clients before each run
                         shuffle(self.clients)
 
-                        for client in self.clients:
-                            time.sleep(constants.DEFAULT_STAGGER_INTERVAL)
-                            client.run_experiment()
+                        # for client in self.clients:
+                        #    time.sleep(constants.DEFAULT_STAGGER_INTERVAL)
+                        #    client.run_experiment()
 
-                        self.clients.clear()
-                        print('Waiting for {} clients to reconnect...'
-                              .format(self.config['clients']))
+                        # self.clients.clear()
 
-                        for i in range(self.config['clients']):
-                            conn, addr = server_socket.accept()
-                            set_keepalive_linux(conn,
-                                                max_fails=100)  # 5 minutes
-                            self.clients.append(Client(conn, addr))
-                            print(
-                                '{} out of {} clients '
-                                'reconnected: {}:{}'.format(
-                                    i + 1, self.config['clients'], *addr
-                                )
-                            )
+                        with Pool(len(self.clients)) as exec_pool:
+                            exec_pool.starmap(run_exp, enumerate(self.clients))
+
+
+                        # print('Waiting for {} clients to reconnect...'
+                        #       .format(self.config['clients']))
+
+                        # for i in range(self.config['clients']):
+                        #     conn, addr = server_socket.accept()
+                        #     set_keepalive_linux(conn,
+                        #                         max_fails=100)  # 5 minutes
+                        #     self.clients.append(Client(conn, addr))
+                        #     print(
+                        #         '{} out of {} clients '
+                        #         'reconnected: {}:{}'.format(
+                        #             i + 1, self.config['clients'], *addr
+                        #         )
+                        #     )
 
                         # all clients reconnected
                         print('Terminate TCPDUMP')
@@ -298,6 +354,7 @@ class Experiment:
 
                         # store the client stats
                         for stat_coll in stats:
+                            stat_coll['server_offset'] = self.offset
                             client_index = stat_coll['client_id']
                             with open(run_path +
                                       constants.CLIENT_STATS.format(
