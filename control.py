@@ -178,6 +178,7 @@ class Experiment:
 
     def _init_tcpdump(self, run_path):
         print('Initializing TCP dump...')
+        print('TCPdump directory: {}'.format(run_path))
         port_cmds = list()
         for port_config in self.config['ports']:
             cmds = [
@@ -297,6 +298,8 @@ class Experiment:
                         pool.map(ntp_sync, self.clients)
 
                         self._init_tcpdump(run_path)
+                        print('TCPdump warmup...')
+                        time.sleep(5)
 
                         # All clients are ready, now let's run the experiment!
                         # Stagger client experiment start to avoid weird
@@ -333,8 +336,11 @@ class Experiment:
                         #     )
 
                         # all clients reconnected
+                        # wait a second before terminating TCPdump
+                        time.sleep(1)
                         print('Terminate TCPDUMP')
                         self.tcpdump_proc.send_signal(signal.SIGINT)
+                        self.tcpdump_proc.wait()
 
                         print('Shut down monitor.')
                         system_stats = monitor.shutdown()
