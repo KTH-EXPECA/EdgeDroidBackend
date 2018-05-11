@@ -5,6 +5,7 @@ import shlex
 import signal
 import subprocess
 import time
+from datetime import datetime
 from multiprocessing import Barrier, Process
 from multiprocessing.pool import Pool
 from random import shuffle
@@ -316,8 +317,10 @@ class Experiment:
 
                         # self.clients.clear()
 
+                        start_timestamp = datetime.utcnow().timestamp()
                         with Pool(len(self.clients)) as exec_pool:
                             exec_pool.starmap(run_exp, enumerate(self.clients))
+                        end_timestamp = datetime.utcnow().timestamp()
 
 
                         # print('Waiting for {} clients to reconnect...'
@@ -360,13 +363,23 @@ class Experiment:
 
                         # store the client stats
                         for stat_coll in stats:
-                            stat_coll['server_offset'] = self.offset
+                            # stat_coll['server_offset'] = self.offset
                             client_index = stat_coll['client_id']
                             with open(run_path +
                                       constants.CLIENT_STATS.format(
                                           client_index
                                       ), 'w') as f:
                                 json.dump(stat_coll, f)
+
+                        # save server stats:
+                        with open(run_path + constants.SERVER_STATS, 'w') as f:
+                            json.dump({
+                                'server_offset': self.offset,
+                                'run_start': start_timestamp + self.offset,
+                                'run_end': end_timestamp + self.offset
+                            }, f)
+
+
         except Exception as e:
             error = e
         finally:
