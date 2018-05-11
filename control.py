@@ -48,7 +48,6 @@ def run_exp(client_idx, client):
     client.wait_for_experiment_finish()
 
 
-
 def close_conn(client):
     client.close()
 
@@ -214,7 +213,7 @@ class Experiment:
         print('Getting NTP offset')
         sync_cnt = 0
         cum_offset = 0
-        while (sync_cnt < constants.DEFAULT_NTP_POLL_COUNT):
+        while sync_cnt < constants.DEFAULT_NTP_POLL_COUNT:
             try:
                 res = self.ntp_client.request(
                     self.config['ntp_server'],
@@ -322,7 +321,6 @@ class Experiment:
                             exec_pool.starmap(run_exp, enumerate(self.clients))
                         end_timestamp = datetime.utcnow().timestamp()
 
-
                         # print('Waiting for {} clients to reconnect...'
                         #       .format(self.config['clients']))
 
@@ -375,10 +373,9 @@ class Experiment:
                         with open(run_path + constants.SERVER_STATS, 'w') as f:
                             json.dump({
                                 'server_offset': self.offset,
-                                'run_start': start_timestamp + self.offset,
-                                'run_end': end_timestamp + self.offset
+                                'run_start'    : start_timestamp + self.offset,
+                                'run_end'      : end_timestamp + self.offset
                             }, f)
-
 
         except Exception as e:
             error = e
