@@ -316,10 +316,10 @@ class Experiment:
 
                         # self.clients.clear()
 
-                        start_timestamp = datetime.utcnow().timestamp()
+                        start_timestamp = datetime.utcnow().timestamp() * 1000.0
                         with Pool(len(self.clients)) as exec_pool:
                             exec_pool.starmap(run_exp, enumerate(self.clients))
-                        end_timestamp = datetime.utcnow().timestamp()
+                        end_timestamp = datetime.utcnow().timestamp() * 1000.0
 
                         # print('Waiting for {} clients to reconnect...'
                         #       .format(self.config['clients']))
