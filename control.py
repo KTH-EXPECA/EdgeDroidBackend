@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
 import csv
 import json
+import os
 import shlex
 import signal
 import subprocess
 import time
-from datetime import datetime
 from multiprocessing import Barrier, Process
 from multiprocessing.pool import Pool
 from random import shuffle
 from socket import *
 
-import os
-import ntplib
 import click
 import docker
+import ntplib
 
 import constants
 from client import Client
@@ -316,10 +315,10 @@ class Experiment:
 
                         # self.clients.clear()
 
-                        start_timestamp = datetime.utcnow().timestamp() * 1000.0
+                        start_timestamp = time.time() * 1000.0
                         with Pool(len(self.clients)) as exec_pool:
                             exec_pool.starmap(run_exp, enumerate(self.clients))
-                        end_timestamp = datetime.utcnow().timestamp() * 1000.0
+                        end_timestamp = time.time() * 1000.0
 
                         # print('Waiting for {} clients to reconnect...'
                         #       .format(self.config['clients']))
