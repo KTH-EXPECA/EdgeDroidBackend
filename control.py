@@ -287,10 +287,6 @@ class Experiment:
                         else:
                             os.mkdir(run_path)
 
-                        print('Starting resource monitor...')
-                        monitor = ResourceMonitor()
-                        monitor.start()
-
                         self._pollNTPServer()
 
                         print('Trigger client NTP sync')
@@ -299,6 +295,10 @@ class Experiment:
                         self._init_tcpdump(run_path)
                         print('TCPdump warmup...')
                         time.sleep(5)
+
+                        print('Starting resource monitor...')
+                        monitor = ResourceMonitor(self.offset)
+                        monitor.start()
 
                         # All clients are ready, now let's run the experiment!
                         # Stagger client experiment start to avoid weird
@@ -337,13 +337,13 @@ class Experiment:
 
                         # all clients reconnected
                         # wait a second before terminating TCPdump
+                        print('Shut down monitor.')
+                        system_stats = monitor.shutdown()
+
                         time.sleep(1)
                         print('Terminate TCPDUMP')
                         self.tcpdump_proc.send_signal(signal.SIGINT)
                         self.tcpdump_proc.wait()
-
-                        print('Shut down monitor.')
-                        system_stats = monitor.shutdown()
 
                         print('Get stats from clients!')
                         exp_id_list = [self.config[

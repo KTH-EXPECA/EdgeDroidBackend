@@ -9,11 +9,12 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 class ResourceMonitor():
 
-    def __init__(self, sampling_freq=5):
+    def __init__(self, time_offset, sampling_freq=5):
         self.sampling_interval = 1.0 / sampling_freq  # 5 Hz by default
         self.total_mem = psutil.virtual_memory().total
         self.manager = Manager()
         self.samples = self.manager.list()
+        self.time_offset = time_offset
 
         self.scheduler = BackgroundScheduler(
             executors={'default': ProcessPoolExecutor(1)}
@@ -22,9 +23,12 @@ class ResourceMonitor():
 
     def start(self):
         if not self.job:
-            self.job = self.scheduler.add_job(ResourceMonitor._sample,
-                                              'interval', args=(self.samples,),
-                                              seconds=self.sampling_interval)
+            self.job = self.scheduler.add_job(
+                ResourceMonitor._sample,
+                'interval',
+                args=(self.samples, self.time_offset),
+                seconds=self.sampling_interval
+            )
             self.scheduler.start()
         else:
             raise RuntimeError('There is already a sampling job running!')
@@ -50,15 +54,16 @@ class ResourceMonitor():
         return samples
 
     @staticmethod
-    def _sample(samples):
+    def _sample(samples, time_offset):
 
         cpu_load = psutil.cpu_percent(percpu=False)
         mem_status = psutil.virtual_memory()
-        timestamp = time.time() * 1000.0  # convert to milliseconds
+        timestamp = time.time() * 1000.0 + time_offset
+        # convert to milliseconds
 
         samples.append(
             {
-                'cpu_load': cpu_load,
+                'cpu_load' : cpu_load,
                 'mem_avail': mem_status.available,
                 'timestamp': timestamp
             }
@@ -70,4 +75,3 @@ if __name__ == '__main__':
     monitor.start()
     time.sleep(5)
     monitor.shutdown(print_samples=True)
-
