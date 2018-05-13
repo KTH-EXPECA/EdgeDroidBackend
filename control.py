@@ -56,8 +56,8 @@ def ntp_sync(client):
     client.ntp_sync()
 
 
-def get_stats(client, experiment_id):
-    return client.get_remote_stats(experiment_id)
+def get_stats(client):
+    return client.get_remote_stats()
 
 
 class Experiment:
@@ -356,10 +356,7 @@ class Experiment:
                         self.tcpdump_proc.wait()
 
                         print('Get stats from clients!')
-                        exp_id_list = [self.config[
-                                           'experiment_id']] * len(self.clients)
-                        stats = pool.starmap(get_stats,
-                                             zip(self.clients, exp_id_list))
+                        stats = pool.map(get_stats, self.clients)
 
                         # store this runs' system stats
                         with open(run_path + constants.SYSTEM_STATS, 'w') as f:
