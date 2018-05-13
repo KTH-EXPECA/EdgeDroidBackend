@@ -82,7 +82,7 @@ class Client():
         if not self.config:
             raise RuntimeError('No config set for client {}!'.format(self.addr))
 
-    def get_remote_stats(self, experiment_id):
+    def get_remote_stats(self):
         buf = struct.pack('>I', constants.CMD_PULL_STATS)
         self.conn.sendall(buf)
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import csv
 import json
+import numpy as np
 import os
 import shlex
 import signal
@@ -41,8 +42,8 @@ def fetch_traces(client):
     client.fetch_traces()
 
 
-def run_exp(client_idx, client):
-    time.sleep(client_idx * constants.DEFAULT_STAGGER_INTERVAL)
+def run_exp(client, stagger_time):
+    time.sleep(stagger_time)
     client.run_experiment()
     client.wait_for_experiment_finish()
 
@@ -315,9 +316,18 @@ class Experiment:
 
                         # self.clients.clear()
 
+                        start_times = np.random.uniform(
+                            0,
+                            constants.DEFAULT_START_WINDOW,
+                            len(self.clients)
+                        )
+
                         start_timestamp = time.time() * 1000.0
                         with Pool(len(self.clients)) as exec_pool:
-                            exec_pool.starmap(run_exp, enumerate(self.clients))
+                            exec_pool.starmap(
+                                run_exp,
+                                zip(self.clients, start_times)
+                            )
                         end_timestamp = time.time() * 1000.0
 
                         # print('Waiting for {} clients to reconnect...'
