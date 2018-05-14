@@ -284,8 +284,8 @@ class Experiment:
                     for i in range(self.config['clients']):
                         conn, addr = server_socket.accept()
                         set_keepalive_linux(conn, max_fails=100)  # 5 minutes
-                        client = Client(conn, addr, self.logger,
-                                        config=self._gen_config_for_client(i))
+                        client = Client(conn, addr,
+                                        self._gen_config_for_client(i))
                         self.clients.append(client)
 
                         self.logger.info(

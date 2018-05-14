@@ -1,6 +1,8 @@
+import logging
 import socket
 import struct
 import json
+import sys
 
 import constants
 
@@ -61,13 +63,29 @@ class Client:
     -----------------
 
     """
+    logging_formatter = logging.Formatter(
+        '%(asctime)s - %(levelname)s: %(message)s'
+    )
 
-    def __init__(self, conn, addr, logger, config=None):
+    def __init__(self, conn, addr, config):
         self.config = config
         self.conn = conn
         self.addr = addr
         self.stats = None
-        self.logger = logger
+        self.logger = logging.getLogger('Client_{:02}'.format(
+            self.config['client_id']))
+
+        # logging
+        stream_handler = logging.StreamHandler(stream=sys.stdout)
+        file_handler = logging.FileHandler('client_{:02}.log'.format(
+            self.config['client_id']
+        ))
+        stream_handler.setFormatter(self.logging_formatter)
+        file_handler.setFormatter(self.logging_formatter)
+
+        self.logger.addHandler(stream_handler)
+        self.logger.addHandler(file_handler)
+        self.logger.setLevel(logging.INFO)
 
     def close(self):
         self.conn.shutdown(socket.SHUT_RDWR)
