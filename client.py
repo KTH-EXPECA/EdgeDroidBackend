@@ -42,7 +42,7 @@ def recvJSON(conn):
     return json.loads(json_s.decode('utf-8'))
 
 
-class Client():
+class Client:
     """
     Local representation of a remote client
 
@@ -62,11 +62,12 @@ class Client():
 
     """
 
-    def __init__(self, conn, addr, config=None):
+    def __init__(self, conn, addr, logger, config=None):
         self.config = config
         self.conn = conn
         self.addr = addr
         self.stats = None
+        self.logger = logger
 
     def close(self):
         self.conn.shutdown(socket.SHUT_RDWR)
@@ -128,7 +129,9 @@ class Client():
         self._wait_for_confirmation()
 
     def run_experiment(self):
-        print('Client {} starting experiment...'.format(self.config['client_id']))
+        self.logger.info('Client %d starting experiment...',
+                         self.config['client_id'])
+
         buf = struct.pack('>I', constants.CMD_START_EXP)
         self.conn.sendall(buf)
         self._wait_for_confirmation()
@@ -140,11 +143,10 @@ class Client():
         if confirmation != constants.MSG_EXPERIMENT_FINISH:
             raise RuntimeError(
                 'Client {}: error on experiment finish!'.format(self.addr))
-        print('Client {} done!'.format(self.config['client_id']))
+
+        self.logger.info('Client %d done!', self.config['client_id'])
 
     def ntp_sync(self):
         buf = struct.pack('>I', constants.CMD_SYNC_NTP)
         self.conn.sendall(buf)
         self._wait_for_confirmation()
-
-

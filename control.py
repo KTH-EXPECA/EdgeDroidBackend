@@ -71,10 +71,17 @@ class Experiment:
 
     def __init__(self, config, host, port, output_dir):
         self.logger = logging.getLogger('ExperimentControl')
-        handler = logging.StreamHandler(stream=sys.stdout)
-        handler.setFormatter(logging_formatter)
-        self.logger.addHandler(handler)
+
+        # logging
+        stream_handler = logging.StreamHandler(stream=sys.stdout)
+        file_handler = logging.FileHandler('control.log')
+        stream_handler.setFormatter(logging_formatter)
+        file_handler.setFormatter(logging_formatter)
+
+        self.logger.addHandler(stream_handler)
+        self.logger.addHandler(file_handler)
         self.logger.setLevel(logging.INFO)
+
         with open(config, 'r') as f:
             # self.logger.info('Loading config...')
             self.logger.info('Loading config')
@@ -277,7 +284,7 @@ class Experiment:
                     for i in range(self.config['clients']):
                         conn, addr = server_socket.accept()
                         set_keepalive_linux(conn, max_fails=100)  # 5 minutes
-                        client = Client(conn, addr,
+                        client = Client(conn, addr, self.logger,
                                         config=self._gen_config_for_client(i))
                         self.clients.append(client)
 
