@@ -19,6 +19,8 @@ import ntplib
 import logging
 import logging.handlers
 
+import psutil
+
 import constants
 from client import Client
 from monitor import ResourceMonitor
@@ -26,6 +28,8 @@ from monitor import ResourceMonitor
 logging_formatter = logging.Formatter(
     '%(asctime)s - %(levelname)s: %(message)s'
 )
+
+CPU_CFS_PERIOD = 100000  # 100 000 microseconds, 100 ms
 
 
 def set_keepalive_linux(sock, after_idle_sec=1, interval_sec=3, max_fails=5):
@@ -115,6 +119,20 @@ class Experiment:
             v = self.config['trace_root_url']
             v = self.config['ntp_server']
             p = self.config['ports']
+
+            if not self.config.get('max_cpu', False):
+                self.config['max_cpu'] = 1.0
+
+            # calculate CPU quota per container given a set
+            # CFS period of 100 ms
+            num_cores = psutil.cpu_count(logical=True)
+            self.config['cpu_quota'] = \
+                num_cores * CPU_CFS_PERIOD * self.config['max_cpu']
+
+            # for example, for 0.5 total CPU resources:
+            # 0.5 = quota / (cores * period)
+            # 0.5 = 400 / (8 * 100) [ms]
+
             assert type(p) == list
             assert len(p) == self.config['clients']
 
@@ -171,6 +189,11 @@ class Experiment:
         dck = docker.from_env()
         containers = list()
         try:
+            logger.warning('Limiting containers to {}% of total CPU resources!'
+                           .format(config['max_cpu'] * 100))
+            logger.warning('CPU Period: {} \t CPU Quota: {}'
+                           .format(CPU_CFS_PERIOD, config['cpu_quota']))
+
             for i, port_config in enumerate(config['ports']):
                 logger.info('Launching container {} of {}'
                             .format(i + 1, len(config['ports'])))
@@ -187,7 +210,9 @@ class Experiment:
                                 'result'],
                             constants.DEFAULT_CONTROL_PORT: port_config[
                                 'control']
-                        }
+                        },
+                        cpu_period=CPU_CFS_PERIOD,
+                        cpu_quota=config['cpu_quota']
                     )
                 )
 
