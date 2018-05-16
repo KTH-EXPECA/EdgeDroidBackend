@@ -102,20 +102,20 @@ class Experiment:
             v = self.config['ntp_server']
             p = self.config['ports']
 
-            if not self.config.get('max_cpu', False):
-                self.config['max_cpu'] = 1.0
+            if not self.config.get('num_cpus', False):
+                self.config['num_cpus'] = psutil.cpu_count()
 
-            # calculate CPU quota per container given a set
-            # CFS period of 100 ms
-            num_cores = psutil.cpu_count(logical=True)
-            self.config['cpu_quota'] = \
-                int(math.ceil(  # need to be an integer
-                    num_cores * CPU_CFS_PERIOD * self.config['max_cpu']
-                ))
-
-            # for example, for 0.5 total CPU resources:
-            # 0.5 = quota / (cores * period)
-            # 0.5 = 400 / (8 * 100) [ms]
+            # # calculate CPU quota per container given a set
+            # # CFS period of 100 ms
+            # num_cores = psutil.cpu_count(logical=True)
+            # self.config['cpu_quota'] = \
+            #     int(math.ceil(  # need to be an integer
+            #         num_cores * CPU_CFS_PERIOD * self.config['max_cpu']
+            #     ))
+            #
+            # # for example, for 0.5 total CPU resources:
+            # # 0.5 = quota / (cores * period)
+            # # 0.5 = 400 / (8 * 100) [ms]
 
             assert type(p) == list
             assert len(p) == self.config['clients']
@@ -169,10 +169,15 @@ class Experiment:
         dck = docker.from_env()
         containers = list()
         try:
-            LOGGER.warning('Limiting containers to {}% of total CPU resources!'
-                           .format(config['max_cpu'] * 100))
-            LOGGER.warning('CFS Period: {}µs \t CFS Quota: {}µs'
-                           .format(CPU_CFS_PERIOD, config['cpu_quota']))
+            # LOGGER.warning('Limiting containers to {}% of total CPU
+            # resources!'
+            #                .format(config['max_cpu'] * 100))
+            # LOGGER.warning('CFS Period: {}µs \t CFS Quota: {}µs'
+            #                .format(CPU_CFS_PERIOD, config['cpu_quota']))
+            LOGGER.warning('Limiting containers to {} out of {} CPUs'
+                           .format(config['num_cpus'],
+                                   psutil.cpu_count()))
+            cpuset = '{}-{}'.format(0, config['num_cpus'] - 1)
 
             for i, port_config in enumerate(config['ports']):
                 LOGGER.info('Launching container {} of {}'
@@ -191,8 +196,9 @@ class Experiment:
                             constants.DEFAULT_CONTROL_PORT: port_config[
                                 'control']
                         },
-                        cpu_period=CPU_CFS_PERIOD,
-                        cpu_quota=config['cpu_quota']
+                        cpuset_cpus=cpuset
+                        # cpu_period=CPU_CFS_PERIOD,
+                        # cpu_quota=config['cpu_quota']
                     )
                 )
 
@@ -280,7 +286,7 @@ class Experiment:
 
                 # accept N clients for the experiment
                 LOGGER.info('Waiting for {} clients to connect...'
-                                 .format(self.config['clients']))
+                            .format(self.config['clients']))
 
                 with Pool(2) as pool:
                     self.docker_proc.start()
