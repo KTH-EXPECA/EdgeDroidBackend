@@ -1,9 +1,9 @@
 import json
-import logging
 import socket
 import struct
 
 import constants
+from custom_logging.logging import LOGGER
 
 MAX_CHUNK_SIZE = 2048
 
@@ -62,29 +62,12 @@ class Client:
     -----------------
 
     """
-    logging_formatter = logging.Formatter(
-        '%(asctime)s - %(levelname)s: %(message)s'
-    )
 
     def __init__(self, conn, addr, config):
         self.config = config
         self.conn = conn
         self.addr = addr
         self.stats = None
-        # self.logger = logging.getLogger('Client_{:02}'.format(
-        #     self.config['client_id']))
-        #
-        # # logging
-        # stream_handler = logging.StreamHandler(stream=sys.stdout)
-        # file_handler = logging.FileHandler('client_{:02}.log'.format(
-        #     self.config['client_id']
-        # ))
-        # stream_handler.setFormatter(self.logging_formatter)
-        # file_handler.setFormatter(self.logging_formatter)
-        #
-        # self.logger.addHandler(stream_handler)
-        # self.logger.addHandler(file_handler)
-        # self.logger.setLevel(logging.INFO)
 
     def close(self):
         self.conn.shutdown(socket.SHUT_RDWR)
@@ -105,16 +88,6 @@ class Client:
         self.conn.sendall(buf)
 
         self.stats = recvJSON(self.conn)
-
-        # check that experiment id matches
-        # if self.stats['experiment_id'] != experiment_id:
-        #     buf = struct.pack('>I', constants.STATUS_ERROR)
-        #     self.conn.sendall(buf)
-        #     raise RuntimeError('Experiment ID\'s do not match!')
-        #
-        # self.config = dict()
-        # self.config['client_id'] = self.stats['client_id']
-        # self.config['experiment_id'] = self.stats['experiment_id']
 
         return self.stats
 
@@ -141,18 +114,20 @@ class Client:
 
     def fetch_traces(self):
         self._check_config()
+        LOGGER.info('Fetching traces: client %d...', self.config['client_id'])
         buf = struct.pack('>I', constants.CMD_FETCH_TRACES)
         self.conn.sendall(buf)
         self._wait_for_confirmation()
+        LOGGER.info('Fetching traces: client %d done!',
+                    self.config['client_id'])
 
     def run_experiment(self):
-        # self.logger.info('Client %d starting experiment...',
-        #                  self.config['client_id'])
+        LOGGER.info('Client %d starting experiment!',
+                    self.config['client_id'])
 
         buf = struct.pack('>I', constants.CMD_START_EXP)
         self.conn.sendall(buf)
         self._wait_for_confirmation()
-        # self.close()
 
     def wait_for_experiment_finish(self):
         confirmation_b = recvall(self.conn, 4)
@@ -161,7 +136,7 @@ class Client:
             raise RuntimeError(
                 'Client {}: error on experiment finish!'.format(self.addr))
 
-        # self.logger.info('Client %d done!', self.config['client_id'])
+        LOGGER.info('Client %d done!', self.config['client_id'])
 
     def ntp_sync(self):
         buf = struct.pack('>I', constants.CMD_SYNC_NTP)

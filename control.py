@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import csv
 import json
-import numpy as np
-import os, sys
+import math
+import os
 import shlex
 import signal
 import subprocess
@@ -15,20 +15,13 @@ from socket import *
 import click
 import docker
 import ntplib
-
-import logging
-import logging.handlers
-
-import math
+import numpy as np
 import psutil
 
 import constants
 from client import Client
+from custom_logging.logging import LOGGER
 from monitor import ResourceMonitor
-
-logging_formatter = logging.Formatter(
-    '%(asctime)s - %(levelname)s: %(message)s'
-)
 
 CPU_CFS_PERIOD = 100000  # 100 000 microseconds, 100 ms
 
@@ -75,21 +68,9 @@ def get_stats(client):
 class Experiment:
 
     def __init__(self, config, host, port, output_dir):
-        self.logger = logging.getLogger('ExperimentControl')
-
-        # logging
-        stream_handler = logging.StreamHandler(stream=sys.stdout)
-        file_handler = logging.FileHandler('control.log')
-        stream_handler.setFormatter(logging_formatter)
-        file_handler.setFormatter(logging_formatter)
-
-        self.logger.addHandler(stream_handler)
-        self.logger.addHandler(file_handler)
-        self.logger.setLevel(logging.INFO)
 
         with open(config, 'r') as f:
-            # self.logger.info('Loading config...')
-            self.logger.info('Loading config')
+            LOGGER.info('Loading config')
             self.config = json.loads(f.read())
             self._validate_config()
 
@@ -106,10 +87,10 @@ class Experiment:
         self.ntp_client = ntplib.NTPClient()
         self.offset = 0
 
-        self.logger.info('Config:')
-        self.logger.info('Experiment ID: %s', self.config['experiment_id'])
-        self.logger.info('Clients: %d', self.config['clients'])
-        self.logger.info('Runs: %d', self.config['runs'])
+        LOGGER.info('Config:')
+        LOGGER.info('Experiment ID: %s', self.config['experiment_id'])
+        LOGGER.info('Clients: %d', self.config['clients'])
+        LOGGER.info('Runs: %d', self.config['runs'])
 
     def _validate_config(self):
         try:
@@ -145,60 +126,56 @@ class Experiment:
                 v = p_config['control']
 
         except Exception as e:
-            self.logger.error("Invalid configuration file.")
+            LOGGER.error("Invalid configuration file.")
             self.shutdown(e)
 
     def shutdown(self, e=None):
-        self.logger.warning('Shut down!')
+        LOGGER.warning('Shut down!')
+
         if e:
-            self.logger.info(e)
+            LOGGER.critical(e)
 
         try:
             for client in self.clients:
                 client.shutdown()
         except Exception as e:
-            self.logger.error(
+            LOGGER.error(
                 'Something went wrong while shutting down clients'
             )
-            self.logger.error(e)
+            LOGGER.error(e)
 
         try:
             if self.tcpdump_proc:
                 self.tcpdump_proc.send_signal(signal.SIGINT)
         except Exception as e:
-            self.logger.error(
+            LOGGER.error(
                 'Something went wrong while shutting down TCPDUMP'
             )
-            self.logger.error(e)
+            LOGGER.error(e)
 
         try:
             self.docker_barrier.wait()
             if self.docker_proc:
                 self.docker_proc.join()
         except Exception as e:
-            self.logger.error(
+            LOGGER.error(
                 'Something went wrong while shutting down Docker containers'
             )
-            self.logger.error(e)
+            LOGGER.error(e)
 
     @staticmethod
     def _init_docker(config, barrier):
-        logger = logging.getLogger('DockerInit')
-        logger.setLevel(logging.INFO)
-        handler = logging.StreamHandler(stream=sys.stdout)
-        handler.setFormatter(logging_formatter)
-        logger.addHandler(handler)
-        logger.info('Spawning Docker containers...')
+        LOGGER.info('Spawning Docker containers...')
         dck = docker.from_env()
         containers = list()
         try:
-            logger.warning('Limiting containers to {}% of total CPU resources!'
+            LOGGER.warning('Limiting containers to {}% of total CPU resources!'
                            .format(config['max_cpu'] * 100))
-            logger.warning('CFS Period: {}µs \t CFS Quota: {}µs'
+            LOGGER.warning('CFS Period: {}µs \t CFS Quota: {}µs'
                            .format(CPU_CFS_PERIOD, config['cpu_quota']))
 
             for i, port_config in enumerate(config['ports']):
-                logger.info('Launching container {} of {}'
+                LOGGER.info('Launching container {} of {}'
                             .format(i + 1, len(config['ports'])))
 
                 containers.append(
@@ -219,25 +196,25 @@ class Experiment:
                     )
                 )
 
-            logger.info('Wait for container warm up...')
+            LOGGER.info('Wait for container warm up...')
             time.sleep(5)
-            logger.info('Initialization done')
+            LOGGER.info('Initialization done')
 
             barrier.wait()
 
         except InterruptedError:
             pass
         except Exception as e:
-            logger.error("Error while spawning Docker containers!")
+            LOGGER.critical("Error while spawning Docker containers!")
             raise e
         finally:
-            logger.warning('Shutting down containers...')
+            LOGGER.warning('Shutting down containers...')
             for cont in containers:
                 cont.kill()
 
     def _init_tcpdump(self, run_path):
-        self.logger.info('Initializing TCP dump...')
-        self.logger.info('TCPdump directory: {}'.format(run_path))
+        LOGGER.info('Initializing TCP dump...')
+        LOGGER.info('TCPdump directory: {}'.format(run_path))
         port_cmds = list()
         for port_config in self.config['ports']:
             cmds = [
@@ -269,7 +246,7 @@ class Experiment:
         return c
 
     def _pollNTPServer(self):
-        self.logger.info('Getting NTP offset')
+        LOGGER.info('Getting NTP offset')
         sync_cnt = 0
         cum_offset = 0
         while sync_cnt < constants.DEFAULT_NTP_POLL_COUNT:
@@ -287,8 +264,8 @@ class Experiment:
         self.offset = (cum_offset * 1000.0) / sync_cnt
         # convert to milliseconds
 
-        self.logger.info('Got NTP offset from %s', self.config['ntp_server'])
-        self.logger.info('Offset: %f ms', self.offset)
+        LOGGER.info('Got NTP offset from %s', self.config['ntp_server'])
+        LOGGER.info('Offset: %f ms', self.offset)
 
     def execute(self):
         server_socket = None
@@ -298,11 +275,11 @@ class Experiment:
                 server_socket.bind((self.host, self.port))
                 server_socket.listen(self.config['clients'])
                 server_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-                self.logger.info(
+                LOGGER.info(
                     'Listening on {}:{}'.format(self.host, self.port))
 
                 # accept N clients for the experiment
-                self.logger.info('Waiting for {} clients to connect...'
+                LOGGER.info('Waiting for {} clients to connect...'
                                  .format(self.config['clients']))
 
                 with Pool(2) as pool:
@@ -316,12 +293,12 @@ class Experiment:
                                         self._gen_config_for_client(i))
                         self.clients.append(client)
 
-                        self.logger.info(
+                        LOGGER.info(
                             '{} out of {} clients connected: {}:{}'.format(
                                 i + 1, self.config['clients'], *addr
                             ))
 
-                        self.logger.info("Sending config...")
+                        LOGGER.info("Sending config...")
                         config_send.append(
                             pool.apply_async(send_config, args=(client,))
                         )
@@ -331,11 +308,11 @@ class Experiment:
 
                     # have the clients fetch traces 2 at the time to avoid
                     # congestion in the network
-                    self.logger.info("Triggering trace download...")
+                    LOGGER.info("Triggering trace download...")
                     pool.map(fetch_traces, self.clients)
 
                     for r in range(self.config['runs']):
-                        self.logger.info('Executing run {} out of {}'.format(
+                        LOGGER.info('Executing run {} out of {}'.format(
                             r + 1, self.config['runs']
                         ))
 
@@ -351,14 +328,14 @@ class Experiment:
 
                         self._pollNTPServer()
 
-                        self.logger.info('Trigger client NTP sync')
+                        LOGGER.info('Trigger client NTP sync')
                         pool.map(ntp_sync, self.clients)
 
                         self._init_tcpdump(run_path)
-                        self.logger.info('TCPdump warmup...')
+                        LOGGER.info('TCPdump warmup...')
                         time.sleep(5)
 
-                        self.logger.info('Starting resource monitor...')
+                        LOGGER.info('Starting resource monitor...')
                         monitor = ResourceMonitor(self.offset)
                         monitor.start()
 
@@ -366,7 +343,7 @@ class Experiment:
                         # Stagger client experiment start to avoid weird
                         # synchronous
                         # effects on the processing times...
-                        self.logger.info('Execute experiment!')
+                        LOGGER.info('Execute experiment!')
 
                         # shuffle clients before each run
                         shuffle(self.clients)
@@ -391,7 +368,7 @@ class Experiment:
                             )
                         end_timestamp = time.time() * 1000.0
 
-                        # self.logger.info('Waiting for {} clients to
+                        # LOGGER.info('Waiting for {} clients to
                         # reconnect...'
                         #       .format(self.config['clients']))
 
@@ -400,7 +377,7 @@ class Experiment:
                         #     set_keepalive_linux(conn,
                         #                         max_fails=100)  # 5 minutes
                         #     self.clients.append(Client(conn, addr))
-                        #     self.logger.info(
+                        #     LOGGER.info(
                         #         '{} out of {} clients '
                         #         'reconnected: {}:{}'.format(
                         #             i + 1, self.config['clients'], *addr
@@ -409,15 +386,15 @@ class Experiment:
 
                         # all clients reconnected
                         # wait a second before terminating TCPdump
-                        self.logger.info('Shut down monitor.')
+                        LOGGER.info('Shut down monitor.')
                         system_stats = monitor.shutdown()
 
                         time.sleep(1)
-                        self.logger.info('Terminate TCPDUMP')
+                        LOGGER.info('Terminate TCPDUMP')
                         self.tcpdump_proc.send_signal(signal.SIGINT)
                         self.tcpdump_proc.wait()
 
-                        self.logger.info('Get stats from clients!')
+                        LOGGER.info('Get stats from clients!')
                         stats = pool.map(get_stats, self.clients)
 
                         # store this runs' system stats
@@ -453,8 +430,8 @@ class Experiment:
                     # server_socket.shutdown(SHUT_RDWR)
                     server_socket.close()
             except Exception as e:
-                self.logger.error('Error closing server socket.')
-                self.logger.error(e)
+                LOGGER.critical('Error closing server socket.')
+                LOGGER.critical(e)
 
             self.shutdown(e=error)
 
