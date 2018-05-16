@@ -19,6 +19,7 @@ import ntplib
 import logging
 import logging.handlers
 
+import math
 import psutil
 
 import constants
@@ -127,7 +128,9 @@ class Experiment:
             # CFS period of 100 ms
             num_cores = psutil.cpu_count(logical=True)
             self.config['cpu_quota'] = \
-                num_cores * CPU_CFS_PERIOD * self.config['max_cpu']
+                int(math.ceil(  # need to be an integer
+                    num_cores * CPU_CFS_PERIOD * self.config['max_cpu']
+                ))
 
             # for example, for 0.5 total CPU resources:
             # 0.5 = quota / (cores * period)
@@ -191,7 +194,7 @@ class Experiment:
         try:
             logger.warning('Limiting containers to {}% of total CPU resources!'
                            .format(config['max_cpu'] * 100))
-            logger.warning('CPU Period: {} \t CPU Quota: {}'
+            logger.warning('CFS Period: {}µs \t CFS Quota: {}µs'
                            .format(CPU_CFS_PERIOD, config['cpu_quota']))
 
             for i, port_config in enumerate(config['ports']):
