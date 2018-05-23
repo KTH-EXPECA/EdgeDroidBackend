@@ -2,6 +2,26 @@
 
 Configures and collects statistics from Gabriel Client Emulators.
 
+## Requirements
+
+- Install and configure [Docker](https://www.docker.com/).
+
+  - Although the script automatically downloads and builds the required Docker container image if needed, it's still recommended to do it once by hand: ```docker pull jamesjue/gabriel-lego```
+
+- Install [tcpdump](http://www.tcpdump.org/) and configure your *sudoers* file to allow capture of packets as a non-root user:
+
+```bash
+$ sudo visudo
+
+...
+# append the following line for sudo-less tcpdump.
+# replace <username> with your username
+<username> ALL=(ALL) NOPASSWD:/usr/sbin/tcpdump
+...
+```
+
+- Cellphone clients must be running the latest version of the [ClientEmulator](https://github.com/molguin92/GabrielClientEmulator).
+
 ## Usage
 
 1. Setup a virtualenv with Python 3.6: 
@@ -16,33 +36,10 @@ $ . ./venv/bin/activate
 $ pip install -r requirements.txt
 ```
 
-3. Set up an experiment configuration JSON file (see next section).
+3. Set up an experiment configuration JSON file. See file ```example_experiment_config.json``` for an example of the general structure.
+
 4. Run the backend, passing your configuration file as argument:
 ```bash
-$ python ./control.py experiment_config.json
+$ python ./control.py experiment_config.json --output_dir=/tmp/control_test
 ```
 
-## JSON Experiment Config
-
-The experiment configuration is a JSON file which is parsed by the control script and pushed to the clients.
-
-General structure:
-
-```
-
-{
-  "experiment_id": <name of the experiment, string>,
-  "clients": <number of clients, int>,
-  "runs": <number of repetitions per client, int>,
-  "steps": <number of steps in the task, int>,
-  "trace_root_url": <URL for downloading .trace files for the steps, should end in a trailing forward slash ("/"), string>,
-  "ports": [ <one entry per client!:>
-    {
-      "video": <video port, int>,
-      "result": <result port, int>,
-      "control": <control port, int>
-    }
-  ]
-}
-
-```

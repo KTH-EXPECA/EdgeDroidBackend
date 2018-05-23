@@ -6,7 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="2ecc3be1-d00b-4c4e-be0d-55a8549fe72f" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/control.py" beforeDir="false" afterPath="$PROJECT_DIR$/control.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -39,7 +38,7 @@
       <file leaf-file-name="control.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/control.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="468">
+            <state relative-caret-position="2088">
               <caret line="198" column="42" selection-start-line="198" selection-start-column="42" selection-end-line="198" selection-end-column="42" />
               <folding>
                 <element signature="e#23#33#0" expanded="true" />
@@ -600,7 +599,14 @@
       <option name="project" value="LOCAL" />
       <updated>1526464874794</updated>
     </task>
-    <option name="localTasksCounter" value="41" />
+    <task id="LOCAL-00041" summary="limit cpu resources by cpu count">
+      <created>1526497166768</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1526497166768</updated>
+    </task>
+    <option name="localTasksCounter" value="42" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -667,7 +673,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="send config to clients asap" />
     <MESSAGE value="keep socket alive" />
     <MESSAGE value="add function to split pcap file into client dumps" />
     <MESSAGE value="plots plots" />
@@ -692,7 +697,8 @@
     <MESSAGE value="limit CPU resources" />
     <MESSAGE value="quota needs to be an integer" />
     <MESSAGE value="beautiful logging" />
-    <option name="LAST_COMMIT_MESSAGE" value="beautiful logging" />
+    <MESSAGE value="limit cpu resources by cpu count" />
+    <option name="LAST_COMMIT_MESSAGE" value="limit cpu resources by cpu count" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -1010,7 +1016,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/control.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="468">
+        <state relative-caret-position="2088">
           <caret line="198" column="42" selection-start-line="198" selection-start-column="42" selection-end-line="198" selection-end-column="42" />
           <folding>
             <element signature="e#23#33#0" expanded="true" />
