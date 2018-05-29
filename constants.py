@@ -23,8 +23,7 @@ SERVER_STATS = 'server_stats.json'
 CLIENT_STATS = '{:02}_stats.json'
 
 # defaults
-DEFAULT_OUTPUT_DIR = '{}/results/'.format(os.getcwd())
-DEFAULT_EXPCONFIG_PATH = '{}/experiment_config.json'.format(os.getcwd())
+DEFAULT_EXPERIMENT_CONFIG_FILENAME = 'experiment_config.json'
 DEFAULT_VIDEO_PORT = 9098
 DEFAULT_RESULT_PORT = 9111
 DEFAULT_CONTROL_PORT = 22222

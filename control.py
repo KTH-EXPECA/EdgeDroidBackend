@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
+import os
 import csv
 import json
-import math
-import os
 import shlex
 import signal
 import subprocess
@@ -73,6 +72,9 @@ class Experiment:
             LOGGER.info('Loading config')
             self.config = json.loads(f.read())
             self._validate_config()
+
+        LOGGER.warning('Loaded config from %s', config)
+        LOGGER.warning('Output directory: %s', output_dir)
 
         self.clients = list()
         self.host = host
@@ -442,21 +444,46 @@ class Experiment:
             self.shutdown(e=error)
 
 
-@click.command()
-@click.argument('experiment_config', default=constants.DEFAULT_EXPCONFIG_PATH,
-                type=click.Path(exists=True, dir_okay=False))
+@click.command(help='Gabriel Trace Demo control server.')
+@click.argument('experiment_directory',
+                type=click.Path(
+                    exists=True,
+                    dir_okay=True,
+                    file_okay=False,
+                    resolve_path=True
+                ))
 @click.option('--host', type=str, default=constants.DEFAULT_CONTROLSERVER_HOST,
-              help='Addresss to which bind this server instance.',
+              help='Address to which bind this server instance.',
               show_default=True)
 @click.option('--port', type=int, default=constants.DEFAULT_CONTROLSERVER_PORT,
               help='Port on which to listen for incoming connection.',
               show_default=True)
-@click.option('--output_dir', default=constants.DEFAULT_OUTPUT_DIR,
-              show_default=True,
-              type=click.Path(dir_okay=True, file_okay=False, exists=True),
-              help='Output directory for result files.')
-def execute(experiment_config, host, port, output_dir):
-    e = Experiment(experiment_config, host, port, output_dir)
+@click.option('--experiment_config', type=str,
+              default=constants.DEFAULT_EXPERIMENT_CONFIG_FILENAME,
+              help='Filename of the experiment config JSON file.',
+              show_default=True)
+@click.option('--output_dir', show_default=False,
+              type=click.Path(
+                  exists=True,
+                  dir_okay=True,
+                  file_okay=False,
+                  resolve_path=True
+              ),
+              help='Output directory for result files. '
+                   'Defaults to the experiment directory')
+def execute(experiment_directory, experiment_config, host, port,
+            output_dir=None):
+    config_path = os.path.join(experiment_directory, experiment_config)
+    if not os.path.exists(config_path):
+        raise click.UsageError(
+            'No experiment config file named {} found in {}'
+                .format(experiment_config, experiment_directory)
+        )
+
+    if not output_dir:
+        output_dir = experiment_directory
+
+    e = Experiment(config_path, host, port, output_dir)
     e.execute()
 
 
