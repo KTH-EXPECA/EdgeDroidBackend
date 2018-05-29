@@ -89,7 +89,6 @@ class Experiment:
         self.ntp_client = ntplib.NTPClient()
         self.offset = 0
 
-        LOGGER.info('Config:')
         LOGGER.info('Experiment ID: %s', self.config['experiment_id'])
         LOGGER.info('Clients: %d', self.config['clients'])
         LOGGER.info('Runs: %d', self.config['runs'])
@@ -444,7 +443,8 @@ class Experiment:
             self.shutdown(e=error)
 
 
-@click.command(help='Gabriel Trace Demo control server.')
+@click.command(help='Gabriel Trace Demo control server, version {}'
+               .format(constants.CONTROL_SERVER_VERSION))
 @click.argument('experiment_directory',
                 type=click.Path(
                     exists=True,
@@ -483,6 +483,8 @@ def execute(experiment_directory, experiment_config, host, port,
     if not output_dir:
         output_dir = experiment_directory
 
+    LOGGER.info('Starting Control server version {}'
+                .format(constants.CONTROL_SERVER_VERSION))
     e = Experiment(config_path, host, port, output_dir)
     e.execute()
 

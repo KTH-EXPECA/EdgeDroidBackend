@@ -1,5 +1,6 @@
 # Protocol definition for control server commands
-import os
+
+CONTROL_SERVER_VERSION = "0.6.1"
 
 DEFAULT_CONTROLSERVER_HOST = '0.0.0.0'
 DEFAULT_CONTROLSERVER_PORT = 1337
