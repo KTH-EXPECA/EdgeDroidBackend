@@ -3,7 +3,7 @@
   "clients": 1,
   "runs": 2,
   "steps": 7,
-  "trace_root_url": "https://github.com/molguin92/CognitiveAssistanceTraces/releases/download/LEGOVideo2/",
+  "trace_dir": "/home/molguin/workspace/CAPerformance_WS/CognitiveAssistance_Traces/lego/HeadTrace2",
   "ntp_server": "130.237.72.211",
   "num_cpus": 4,
   "ports": [

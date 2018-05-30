@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import hashlib
+import itertools
 import os
 import csv
 import json
@@ -38,12 +40,16 @@ def set_keepalive_linux(sock, after_idle_sec=1, interval_sec=3, max_fails=5):
     sock.setsockopt(IPPROTO_TCP, TCP_KEEPCNT, max_fails)
 
 
+def send_step(client, index, checksum, data):
+    client.send_step(index, checksum, data)
+
+
 def send_config(client):
     client.send_config()
 
 
-def fetch_traces(client):
-    client.fetch_traces()
+# def fetch_traces(client):
+#     client.fetch_traces()
 
 
 def run_exp(client, stagger_time):
@@ -98,25 +104,30 @@ class Experiment:
             v = self.config['experiment_id']
             v = self.config['clients']
             v = self.config['runs']
-            v = self.config['steps']
-            v = self.config['trace_root_url']
+            # v = self.config['steps']
+            # v = self.config['trace_root_url']
             v = self.config['ntp_server']
             p = self.config['ports']
 
             if not self.config.get('num_cpus', False):
                 self.config['num_cpus'] = psutil.cpu_count()
 
-            # # calculate CPU quota per container given a set
-            # # CFS period of 100 ms
-            # num_cores = psutil.cpu_count(logical=True)
-            # self.config['cpu_quota'] = \
-            #     int(math.ceil(  # need to be an integer
-            #         num_cores * CPU_CFS_PERIOD * self.config['max_cpu']
-            #     ))
-            #
-            # # for example, for 0.5 total CPU resources:
-            # # 0.5 = quota / (cores * period)
-            # # 0.5 = 400 / (8 * 100) [ms]
+            self.config['num_cpus'] = min(psutil.cpu_count(),
+                                          self.config['num_cpus'])
+
+            # verify trace dir actually exists
+            if not os.path.isdir(self.config['trace_dir']):
+                LOGGER.error('Invalid trace directory.')
+                raise Exception()
+
+            # verify step files exist
+            for i in range(1, self.config['steps'] + 1):
+                filename = constants.STEP_FILE_FMT.format(i)
+                path = os.path.join(self.config['trace_dir'], filename)
+                if not os.path.isfile(path):
+                    LOGGER.error('{} does not seem to be a valid step trace'
+                                 'file'.format(path))
+                    raise Exception()
 
             assert type(p) == list
             assert len(p) == self.config['clients']
@@ -247,7 +258,7 @@ class Experiment:
         c['client_id'] = client_index
         # c['runs'] = self.config['runs']
         c['steps'] = self.config['steps']
-        c['trace_root_url'] = self.config['trace_root_url']
+        # c['trace_root_url'] = self.config['trace_root_url']
         c['ports'] = self.config['ports'][client_index]
         c['ntp_server'] = self.config['ntp_server']
         return c
@@ -315,8 +326,24 @@ class Experiment:
 
                     # have the clients fetch traces 2 at the time to avoid
                     # congestion in the network
-                    LOGGER.info("Triggering trace download...")
-                    pool.map(fetch_traces, self.clients)
+                    # LOGGER.info("Triggering trace download...")
+                    # pool.map(fetch_traces, self.clients)
+
+                    LOGGER.info("Pushing step files to clients...")
+                    for i in range(1, self.config['steps'] + 1):
+                        filename = constants.STEP_FILE_FMT.format(i)
+                        path = os.path.join(self.config['trace_dir'], filename)
+                        with open(path, 'rb') as step:
+                            step_data = step.read()
+                            checksum = hashlib.md5(step_data).hexdigest()
+
+                        pool.starmap(send_step,
+                                     zip(
+                                         self.clients,
+                                         itertools.repeat(i),
+                                         itertools.repeat(checksum),
+                                         itertools.repeat(step_data)
+                                     ))
 
                     for r in range(self.config['runs']):
                         LOGGER.info('Executing run {} out of {}'.format(

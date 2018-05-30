@@ -14,7 +14,7 @@ def recvall(conn, length):
     while total_recv < length:
         d = conn.recv(min(length - total_recv, MAX_CHUNK_SIZE))
         if d == b'':
-            raise RuntimeError("socket connection broken")
+            raise RuntimeError('socket connection broken')
         data.append(d)
         total_recv += len(d)
     return b''.join(data)
@@ -43,8 +43,16 @@ def recvJSON(conn):
     return json.loads(json_s.decode('utf-8'))
 
 
+def sendJSON(conn, dict_data):
+    json_data = json.dumps(dict_data,
+                           separators=(',', ':')).encode('utf-8')
+    length = len(json_data)
+    buf = struct.pack('>I{l}s'.format(l=length), length, json_data)
+    conn.sendall(buf)
+
+
 class Client:
-    """
+    '''
     Local representation of a remote client
 
     Client message format:
@@ -61,7 +69,7 @@ class Client:
     |      ...      |
     -----------------
 
-    """
+    '''
 
     def __init__(self, conn, addr, config):
         self.config = config
@@ -97,29 +105,24 @@ class Client:
         confirmation_b = recvall(self.conn, 4)
         (confirmation,) = struct.unpack('>I', confirmation_b)
         if confirmation != constants.STATUS_SUCCESS:
-            raise RuntimeError(
+            raise Exception(
                 'Client {}: error on confirmation!'.format(self.addr))
 
     def send_config(self):
         self._check_config()
-
-        config_b = json.dumps(self.config,
-                              separators=(',', ':')).encode('utf-8')
-        length = len(config_b)
-        buf = struct.pack('>II{l}s'.format(l=length),
-                          constants.CMD_PUSH_CONFIG,
-                          length, config_b)
+        buf = struct.pack('>I', constants.CMD_PUSH_CONFIG)
         self.conn.sendall(buf)
+        sendJSON(self.conn, self.config)
         self._wait_for_confirmation()
 
-    def fetch_traces(self):
-        self._check_config()
-        LOGGER.info('Fetching traces: client %d...', self.config['client_id'])
-        buf = struct.pack('>I', constants.CMD_FETCH_TRACES)
-        self.conn.sendall(buf)
-        self._wait_for_confirmation()
-        LOGGER.info('Fetching traces: client %d done!',
-                    self.config['client_id'])
+    # def fetch_traces(self):
+    #     self._check_config()
+    #     LOGGER.info('Fetching traces: client %d...', self.config['client_id'])
+    #     buf = struct.pack('>I', constants.CMD_FETCH_TRACES)
+    #     self.conn.sendall(buf)
+    #     self._wait_for_confirmation()
+    #     LOGGER.info('Fetching traces: client %d done!',
+    #                 self.config['client_id'])
 
     def run_experiment(self):
         LOGGER.info('Client %d starting experiment!',
@@ -141,4 +144,40 @@ class Client:
     def ntp_sync(self):
         buf = struct.pack('>I', constants.CMD_SYNC_NTP)
         self.conn.sendall(buf)
+        self._wait_for_confirmation()
+
+    def send_step(self, index, checksum, data):
+        # first build and send header
+        hdr = {
+            constants.STEP_METADATA_INDEX : index,
+            constants.STEP_METADATA_SIZE  : len(data),
+            constants.STEP_METADATA_CHKSUM: checksum
+        }
+
+        LOGGER.info('Checking step %d, client %d',
+                    index, self.config['client_id'])
+
+        buf = struct.pack('>I', constants.CMD_PUSH_STEP)
+        self.conn.sendall(buf)
+        sendJSON(self.conn, hdr)
+        try:
+            self._wait_for_confirmation()
+            LOGGER.info('Client %d already has the step!',
+                        self.config['client_id'])
+            # client already had the step file
+            return
+        except Exception:
+            LOGGER.info('Client %d does not have step %d!',
+                        self.config['client_id'], index)
+            pass
+
+        # client-side verification of the step failed,
+        # we need to push a new copy
+
+        LOGGER.info('Sending step %d to client %d. Total size: %d bytes',
+                    index, self.config['client_id'], len(data))
+        buf = struct.pack('>I{}s'.format(len(data)),
+                          len(data), data)
+        self.conn.sendall(buf)
+
         self._wait_for_confirmation()
