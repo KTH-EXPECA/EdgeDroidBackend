@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import base64
 import hashlib
 import itertools
 import os
@@ -334,6 +335,7 @@ class Experiment:
                         filename = constants.STEP_FILE_FMT.format(i)
                         path = os.path.join(self.config['trace_dir'], filename)
                         with open(path, 'rb') as step:
+                            # step_data = base64.encodebytes(step.read())
                             step_data = step.read()
                             checksum = hashlib.md5(step_data).hexdigest()
 

@@ -162,8 +162,8 @@ class Client:
         sendJSON(self.conn, hdr)
         try:
             self._wait_for_confirmation()
-            LOGGER.info('Client %d already has the step!',
-                        self.config['client_id'])
+            LOGGER.info('Client %d already has step %d!',
+                        self.config['client_id'], index)
             # client already had the step file
             return
         except Exception:
@@ -176,8 +176,6 @@ class Client:
 
         LOGGER.info('Sending step %d to client %d. Total size: %d bytes',
                     index, self.config['client_id'], len(data))
-        buf = struct.pack('>I{}s'.format(len(data)),
-                          len(data), data)
-        self.conn.sendall(buf)
 
+        self.conn.sendall(data)
         self._wait_for_confirmation()
