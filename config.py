@@ -1,6 +1,8 @@
 import os
 from typing import NamedTuple, Dict
 
+import toml
+
 import constants
 from custom_logging.logging import LOGGER
 
@@ -13,14 +15,22 @@ class RecursiveNestedDict(dict):
     def __init__(self, *args, **kwargs):
         super(RecursiveNestedDict, self).__init__(*args, **kwargs)
         for k, v in self.items():
-            if isinstance(v, dict):
+            if isinstance(v, dict) and not isinstance(v, RecursiveNestedDict):
                 self[k] = RecursiveNestedDict(v)
 
     def __setitem__(self, key, value):
-        if isinstance(value, dict):
+        if isinstance(value, dict) and \
+                not isinstance(value, RecursiveNestedDict):
             value = RecursiveNestedDict(value)
 
         super(RecursiveNestedDict, self).__setitem__(key, value)
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(' \
+               + super(RecursiveNestedDict, self).__repr__() + ')'
+
+    def __str__(self):
+        return str(self.to_dict())
 
     def __recursive_find(self, path: str, _previous_path: str = None):
         keys = path.split(self._PATH_SEP, maxsplit=1)
@@ -46,6 +56,20 @@ class RecursiveNestedDict(dict):
                         current_path,
                         self.__class__.__name__
                     ))
+
+    def asdict(self) -> Dict:
+        """
+        Returns the vanilla python representation of this dictionary.
+        :return: Dictionary representation of the data contained in this
+        instance.
+        """
+
+        r = dict(self)
+        for k, v in r.items():
+            if isinstance(v, RecursiveNestedDict):
+                r[k] = v.to_dict()
+
+        return r
 
     def find(self, path: str):
         """
@@ -75,16 +99,7 @@ class ConfigException(Exception):
 
 
 class ExperimentConfig:
-    name = None
-    clients = 0
-    runs = 0
-    trace_steps = []
-    ntp_servers = []
-    num_cpus = 0
-    port_configs = []
-
-    def __init__(self, toml_config: dict):
-        toml_config = RecursiveNestedDict(toml_config)
+    def __init__(self, toml_config: RecursiveNestedDict):
         try:
             self.name = toml_config.find('experiment.name')
             self.clients = toml_config.find('experiment.clients')
@@ -99,7 +114,8 @@ class ExperimentConfig:
                 LOGGER.error(error_str)
                 raise ConfigException(error_str)
 
-            # verify step files exist
+            # verify that step files exist
+            self.trace_steps = []
             for i in range(1, num_steps + 1):
                 filename = constants.STEP_FILE_FMT.format(i)
                 path = os.path.join(trace_dir, filename)
@@ -114,6 +130,7 @@ class ExperimentConfig:
             self.ntp_servers = toml_config.find('experiment.ntp.servers')
             self.num_cpus = toml_config.find('experiment.performance.cpus')
 
+            self.port_configs = []
             for port_cfg in toml_config.find('experiment.ports'):
                 self.port_configs.append(PortConfig(
                     video=port_cfg['video'],
@@ -125,4 +142,30 @@ class ExperimentConfig:
             LOGGER.error('Error when parsing TOML config.')
             LOGGER.error('Missing required configuration key: %s', *e.args)
             raise ConfigException('Missing required configuration key: '
-                                  '{}'.format(*e.args))
+                                  '{}'.format(*e.args)) from e
+
+        self.__raw_cfg = toml_config
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(' + repr(self.__raw_cfg) + ')'
+
+    def __str__(self):
+        r = {
+            'experiment': {
+                'name'       : self.name,
+                'clients'    : self.clients,
+                'runs'       : self.runs,
+                'ntp'        : {
+                    'servers': self.ntp_servers
+                },
+                'trace'      : {
+                    'steps': self.trace_steps
+                },
+                'performance': {
+                    'num_cpus': self.num_cpus
+                },
+                'ports'      : self.port_configs
+            }
+        }
+
+        return toml.dumps(r)
