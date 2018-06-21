@@ -4,33 +4,34 @@
     clients = 1
     runs = 2
 
-    [experiment.trace]
-        # settings pertaining to the trace used in the experiment
-        steps = 7
-        dir = "/home/molguin/workspace/CAPerformance_WS/CognitiveAssistance_Traces/lego/HeadTrace2"
+[experiment.trace]
+    # settings pertaining to the trace used in the experiment
+    steps = 7
+    dir = "/home/molguin/workspace/CAPerformance_WS/CognitiveAssistance_Traces/lego/HeadTrace2"
 
-    [experiment.ntp]
-        # ntp servers used for synchronization
-        servers = ["130.237.72.211"]
+[experiment.ntp]
+    # ntp servers used for synchronization
+    servers = ["130.237.72.211"]
 
-    [experiment.performance]
-        # performance settings, such as number of CPUs usable by the docker instances
-        cpus = 4
+[experiment.performance]
+    # performance settings, such as number of CPUs usable by the docker instances
+    cpus = 4
 
-    [[experiment.ports]]
-        # array of port configurations for each client, see (*)
-        video = 8999
-        results = 8988
-        control = 33333
+[[experiment.ports]]
+    # array of port configurations for each client, see (*)
+    video = 8999
+    results = 8988
+    control = 33333
 
-    # (*) [[experiment.ports]] represents one element of the array of port configurations
-    # the configuration requires one per client, so, for example, an experiment with three clients would need three [[experiment.ports]] sections:
-    #
-    # [[experiment.ports]]
-    # ... client 1
-    #
-    # [[experiment.ports]]
-    # ... client 2
-    #
-    # [[experiment.ports]]
-    # ... client 3
+# (*) [[experiment.ports]] represents one element of the array of port configurations.
+# The configuration requires one of these per client, so, for example, an experiment
+# with three clients would need three [[experiment.ports]] sections:
+#
+# [[experiment.ports]]
+# ... client 1
+#
+# [[experiment.ports]]
+# ... client 2
+#
+# [[experiment.ports]]
+# ... client 3
