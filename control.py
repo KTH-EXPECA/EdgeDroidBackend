@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-import base64
-import hashlib
-import itertools
 import os
 import csv
+import hashlib
+import itertools
 import json
 import shlex
 import signal
@@ -19,9 +18,11 @@ import docker
 import ntplib
 import numpy as np
 import psutil
+import toml
 
 import constants
 from client import Client
+from config import ExperimentConfig, RecursiveNestedDict
 from custom_logging.logging import LOGGER
 from monitor import ResourceMonitor
 
@@ -77,8 +78,8 @@ class Experiment:
 
         with open(config, 'r') as f:
             LOGGER.info('Loading config')
-            self.config = json.loads(f.read())
-            self._validate_config()
+            self.config = ExperimentConfig(
+                toml.load(f, _dict=RecursiveNestedDict))
 
         LOGGER.warning('Loaded config from %s', config)
         LOGGER.warning('Output directory: %s', output_dir)
@@ -96,51 +97,9 @@ class Experiment:
         self.ntp_client = ntplib.NTPClient()
         self.offset = 0
 
-        LOGGER.info('Experiment ID: %s', self.config['experiment_id'])
-        LOGGER.info('Clients: %d', self.config['clients'])
-        LOGGER.info('Runs: %d', self.config['runs'])
-
-    def _validate_config(self):
-        try:
-            v = self.config['experiment_id']
-            v = self.config['clients']
-            v = self.config['runs']
-            # v = self.config['steps']
-            # v = self.config['trace_root_url']
-            v = self.config['ntp_server']
-            p = self.config['ports']
-
-            if not self.config.get('num_cpus', False):
-                self.config['num_cpus'] = psutil.cpu_count()
-
-            self.config['num_cpus'] = min(psutil.cpu_count(),
-                                          self.config['num_cpus'])
-
-            # verify trace dir actually exists
-            if not os.path.isdir(self.config['trace_dir']):
-                LOGGER.error('Invalid trace directory.')
-                raise Exception()
-
-            # verify step files exist
-            for i in range(1, self.config['steps'] + 1):
-                filename = constants.STEP_FILE_FMT.format(i)
-                path = os.path.join(self.config['trace_dir'], filename)
-                if not os.path.isfile(path):
-                    LOGGER.error('{} does not seem to be a valid step trace'
-                                 'file'.format(path))
-                    raise Exception()
-
-            assert type(p) == list
-            assert len(p) == self.config['clients']
-
-            for p_config in p:
-                v = p_config['video']
-                v = p_config['result']
-                v = p_config['control']
-
-        except Exception as e:
-            LOGGER.error("Invalid configuration file.")
-            self.shutdown(e)
+        LOGGER.info('Experiment ID: %s', self.config.name)
+        LOGGER.info('Clients: %d', self.config.clients)
+        LOGGER.info('Runs: %d', self.config.runs)
 
     def shutdown(self, e=None):
         LOGGER.warning('Shut down!')
@@ -177,24 +136,19 @@ class Experiment:
             LOGGER.error(e)
 
     @staticmethod
-    def _init_docker(config, barrier):
+    def _init_docker(config: ExperimentConfig, barrier: Barrier):
         LOGGER.info('Spawning Docker containers...')
         dck = docker.from_env()
         containers = list()
         try:
-            # LOGGER.warning('Limiting containers to {}% of total CPU
-            # resources!'
-            #                .format(config['max_cpu'] * 100))
-            # LOGGER.warning('CFS Period: {}µs \t CFS Quota: {}µs'
-            #                .format(CPU_CFS_PERIOD, config['cpu_quota']))
             LOGGER.warning('Limiting containers to {} out of {} CPUs'
-                           .format(config['num_cpus'],
+                           .format(config.num_cpus,
                                    psutil.cpu_count()))
-            cpuset = '{}-{}'.format(0, config['num_cpus'] - 1)
+            cpuset = '{}-{}'.format(0, config.num_cpus - 1)
 
-            for i, port_config in enumerate(config['ports']):
+            for i, port_cfg in enumerate(config.port_configs):
                 LOGGER.info('Launching container {} of {}'
-                            .format(i + 1, len(config['ports'])))
+                            .format(i + 1, len(config.port_configs)))
 
                 containers.append(
                     dck.containers.run(
@@ -202,16 +156,11 @@ class Experiment:
                         detach=True,
                         auto_remove=True,
                         ports={
-                            constants.DEFAULT_VIDEO_PORT  : port_config[
-                                'video'],
-                            constants.DEFAULT_RESULT_PORT : port_config[
-                                'result'],
-                            constants.DEFAULT_CONTROL_PORT: port_config[
-                                'control']
+                            constants.DEFAULT_VIDEO_PORT  : port_cfg.video,
+                            constants.DEFAULT_RESULT_PORT : port_cfg.result,
+                            constants.DEFAULT_CONTROL_PORT: port_cfg.control
                         },
                         cpuset_cpus=cpuset
-                        # cpu_period=CPU_CFS_PERIOD,
-                        # cpu_quota=config['cpu_quota']
                     )
                 )
 
@@ -231,15 +180,15 @@ class Experiment:
             for cont in containers:
                 cont.kill()
 
-    def _init_tcpdump(self, run_path):
+    def _init_tcpdump(self, run_path: str):
         LOGGER.info('Initializing TCP dump...')
         LOGGER.info('TCPdump directory: {}'.format(run_path))
         port_cmds = list()
-        for port_config in self.config['ports']:
+        for port_cfg in self.config.port_configs:
             cmds = [
-                'port {}'.format(port_config['video']),
-                'port {}'.format(port_config['result']),
-                'port {}'.format(port_config['control']),
+                'port {}'.format(port_cfg.video),
+                'port {}'.format(port_cfg.result),
+                'port {}'.format(port_cfg.control),
             ]
 
             port_cmds.append(' or '.join(cmds))
@@ -255,13 +204,12 @@ class Experiment:
 
     def _gen_config_for_client(self, client_index):
         c = dict()
-        c['experiment_id'] = self.config['experiment_id']
+        c['experiment_id'] = self.config.name
         c['client_id'] = client_index
-        # c['runs'] = self.config['runs']
-        c['steps'] = self.config['steps']
-        # c['trace_root_url'] = self.config['trace_root_url']
-        c['ports'] = self.config['ports'][client_index]
-        c['ntp_server'] = self.config['ntp_server']
+        c['steps'] = len(self.config.trace_steps)
+        c['ports'] = self.config.port_configs[client_index]
+        c['ntp_server'] = self.config.ntp_servers[0]
+        # TODO change in the future (to work with more than one server)
         return c
 
     def _pollNTPServer(self):
@@ -271,7 +219,7 @@ class Experiment:
         while sync_cnt < constants.DEFAULT_NTP_POLL_COUNT:
             try:
                 res = self.ntp_client.request(
-                    self.config['ntp_server'],
+                    self.config.ntp_servers[0],
                     version=4
                 )
 
@@ -283,7 +231,7 @@ class Experiment:
         self.offset = (cum_offset * 1000.0) / sync_cnt
         # convert to milliseconds
 
-        LOGGER.info('Got NTP offset from %s', self.config['ntp_server'])
+        LOGGER.info('Got NTP offset from %s', self.config.ntp_servers[0])
         LOGGER.info('Offset: %f ms', self.offset)
 
     def execute(self):
@@ -292,20 +240,19 @@ class Experiment:
         try:
             with socket(AF_INET, SOCK_STREAM) as server_socket:
                 server_socket.bind((self.host, self.port))
-                server_socket.listen(self.config['clients'])
+                server_socket.listen(self.config.clients)
                 server_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-                LOGGER.info(
-                    'Listening on {}:{}'.format(self.host, self.port))
+                LOGGER.info('Listening on {}:{}'.format(self.host, self.port))
 
                 # accept N clients for the experiment
                 LOGGER.info('Waiting for {} clients to connect...'
-                            .format(self.config['clients']))
+                            .format(self.config.clients))
 
                 with Pool(2) as pool:
                     self.docker_proc.start()
 
                     config_send = []
-                    for i in range(self.config['clients']):
+                    for i in range(self.config.clients):
                         conn, addr = server_socket.accept()
                         set_keepalive_linux(conn, max_fails=100)  # 5 minutes
                         client = Client(conn, addr,
@@ -314,7 +261,7 @@ class Experiment:
 
                         LOGGER.info(
                             '{} out of {} clients connected: {}:{}'.format(
-                                i + 1, self.config['clients'], *addr
+                                i + 1, self.config.clients, *addr
                             ))
 
                         LOGGER.info("Sending config...")
@@ -331,25 +278,22 @@ class Experiment:
                     # pool.map(fetch_traces, self.clients)
 
                     LOGGER.info("Pushing step files to clients...")
-                    for i in range(1, self.config['steps'] + 1):
-                        filename = constants.STEP_FILE_FMT.format(i)
-                        path = os.path.join(self.config['trace_dir'], filename)
+                    for i, path in enumerate(self.config.trace_steps):
                         with open(path, 'rb') as step:
-                            # step_data = base64.encodebytes(step.read())
                             step_data = step.read()
                             checksum = hashlib.md5(step_data).hexdigest()
 
                         pool.starmap(send_step,
                                      zip(
                                          self.clients,
-                                         itertools.repeat(i),
+                                         itertools.repeat(i + 1),
                                          itertools.repeat(checksum),
                                          itertools.repeat(step_data)
                                      ))
 
-                    for r in range(self.config['runs']):
+                    for r in range(self.config.runs):
                         LOGGER.info('Executing run {} out of {}'.format(
-                            r + 1, self.config['runs']
+                            r + 1, self.config.runs
                         ))
 
                         run_path = self.output_dir + '/run_{}/'.format(r + 1)

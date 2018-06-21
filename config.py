@@ -6,7 +6,7 @@ import toml
 import constants
 from custom_logging.logging import LOGGER
 
-PortConfig = NamedTuple('PortConfig', video=int, results=int, control=int)
+PortConfig = NamedTuple('PortConfig', video=int, result=int, control=int)
 
 
 class RecursiveNestedDict(dict):
@@ -30,7 +30,7 @@ class RecursiveNestedDict(dict):
                + super(RecursiveNestedDict, self).__repr__() + ')'
 
     def __str__(self):
-        return str(self.to_dict())
+        return str(self.asdict())
 
     def __recursive_find(self, path: str, _previous_path: str = None):
         keys = path.split(self._PATH_SEP, maxsplit=1)
@@ -67,7 +67,7 @@ class RecursiveNestedDict(dict):
         r = dict(self)
         for k, v in r.items():
             if isinstance(v, RecursiveNestedDict):
-                r[k] = v.to_dict()
+                r[k] = v.asdict()
 
         return r
 
@@ -134,7 +134,7 @@ class ExperimentConfig:
             for port_cfg in toml_config.find('experiment.ports'):
                 self.port_configs.append(PortConfig(
                     video=port_cfg['video'],
-                    results=port_cfg['results'],
+                    result=port_cfg['results'],
                     control=port_cfg['control']
                 ))
 

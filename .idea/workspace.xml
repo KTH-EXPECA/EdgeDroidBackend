@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/control.py" line="201" />
-  </component>
   <component name="ChangeListManager">
-    <list default="true" id="2ecc3be1-d00b-4c4e-be0d-55a8549fe72f" name="Default" comment="">
+    <list default="true" id="2ecc3be1-d00b-4c4e-be0d-55a8549fe72f" name="Default" comment="push step from control, working!">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client.py" beforeDir="false" afterPath="$PROJECT_DIR$/client.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/constants.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/control.py" beforeDir="false" afterPath="$PROJECT_DIR$/control.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -18,56 +16,94 @@
   </component>
   <component name="CoverageDataManager">
     <SUITE FILE_PATH="coverage/ControlBackend$monitor.coverage" NAME="monitor Coverage Results" MODIFIED="1524570465573" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/GabrielClientEmulatorControl$control.coverage" NAME="control Coverage Results" MODIFIED="1527701752391" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/GabrielClientEmulatorControl$control.coverage" NAME="control Coverage Results" MODIFIED="1529595024606" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ControlBackend$control.coverage" NAME="control Coverage Results" MODIFIED="1524753088242" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/GabrielClientEmulatorControl$lego_timing.coverage" NAME="lego_timing Coverage Results" MODIFIED="1525424641389" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/results" />
     <SUITE FILE_PATH="coverage/GabrielClientEmulatorControl$process_results.coverage" NAME="process_results Coverage Results" MODIFIED="1525528792881" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/results" />
   </component>
   <component name="FileEditorManager">
-    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="control.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/control.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="330">
-              <caret line="335" column="78" selection-start-line="335" selection-start-column="78" selection-end-line="335" selection-end-column="78" />
-              <folding>
-                <element signature="e#23#36#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="client.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/client.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="302">
-              <caret line="165" column="55" selection-start-line="165" selection-start-column="55" selection-end-line="165" selection-end-column="55" />
-              <folding>
-                <element signature="e#0#11#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="experiment_config.json" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/example_experiment_dir/experiment_config.json">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="72">
-              <caret line="4" column="4" selection-start-line="4" selection-start-column="4" selection-end-line="4" selection-end-column="4" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="constants.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/constants.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="288">
-              <caret line="16" column="13" selection-start-line="16" selection-start-column="13" selection-end-line="16" selection-end-column="13" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-    </leaf>
+    <splitter split-orientation="horizontal" split-proportion="0.5">
+      <split-first>
+        <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
+          <file leaf-file-name="control.py" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/control.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="288">
+                  <caret line="434" column="55" selection-start-line="434" selection-start-column="55" selection-end-line="434" selection-end-column="55" />
+                  <folding>
+                    <element signature="e#23#32#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="config.py" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/config.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="-1764">
+                  <caret line="28" column="46" lean-forward="true" selection-start-line="28" selection-start-column="46" selection-end-line="28" selection-end-column="46" />
+                  <folding>
+                    <element signature="e#0#9#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="client.py" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/client.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="-9">
+                  <caret line="122" column="39" selection-start-line="122" selection-start-column="39" selection-end-line="122" selection-end-column="39" />
+                  <folding>
+                    <element signature="e#0#11#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="constants.py" pinned="false" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/constants.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="291">
+                  <caret line="32" column="60" selection-start-line="32" selection-start-column="60" selection-end-line="32" selection-end-column="60" />
+                </state>
+              </provider>
+            </entry>
+          </file>
+        </leaf>
+      </split-first>
+      <split-second>
+        <leaf>
+          <file leaf-file-name="experiment_config.json" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/example_experiment_dir/experiment_config.json">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="-9">
+                  <caret line="6" column="32" selection-start-line="6" selection-start-column="16" selection-end-line="6" selection-end-column="32" />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="experiment_config.toml" pinned="false" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/example_experiment_dir/experiment_config.toml">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="450">
+                  <caret line="25" column="66" selection-start-line="25" selection-start-column="66" selection-end-line="25" selection-end-column="66" />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="requirements.txt" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/requirements.txt">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="180">
+                  <caret line="10" column="4" selection-start-line="10" selection-start-column="4" selection-end-line="10" selection-end-column="4" />
+                </state>
+              </provider>
+            </entry>
+          </file>
+        </leaf>
+      </split-second>
+    </splitter>
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -106,17 +142,20 @@
         <option value="$PROJECT_DIR$/results/lego_timing.py" />
         <option value="$PROJECT_DIR$/results/process_results.py" />
         <option value="$PROJECT_DIR$/ControlConst.py" />
-        <option value="$PROJECT_DIR$/requirements.txt" />
         <option value="$APPLICATION_CONFIG_DIR$/scratches/scratch.txt" />
         <option value="$PROJECT_DIR$/monitor.py" />
         <option value="$PROJECT_DIR$/example_experiment_config.json" />
         <option value="$PROJECT_DIR$/colored_logging.py" />
         <option value="$PROJECT_DIR$/custom_logging/logging.py" />
-        <option value="$PROJECT_DIR$/example_experiment_dir/.gitignore" />
         <option value="$PROJECT_DIR$/example_experiment_dir/experiment_config.json" />
-        <option value="$PROJECT_DIR$/constants.py" />
-        <option value="$PROJECT_DIR$/control.py" />
         <option value="$PROJECT_DIR$/client.py" />
+        <option value="$PROJECT_DIR$/example_experiment_dir/.gitignore" />
+        <option value="$PROJECT_DIR$/requirements.txt" />
+        <option value="$PROJECT_DIR$/example_experiment_dir/experiment_config.toml" />
+        <option value="$PROJECT_DIR$/utils.py" />
+        <option value="$PROJECT_DIR$/config.py" />
+        <option value="$PROJECT_DIR$/control.py" />
+        <option value="$PROJECT_DIR$/constants.py" />
       </list>
     </option>
   </component>
@@ -141,7 +180,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -158,13 +196,14 @@
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="add_unversioned_files" value="true&#10;/home/molguin/workspace/CAPerformance_WS/GabrielClientEmulatorControl/client_01.log" />
+    <property name="add_unversioned_files" value="true&#10;/home/molguin/workspace/CAPerformance_WS/GabrielClientEmulatorControl/client_01.log&#10;/home/molguin/workspace/CAPerformance_WS/GabrielClientEmulatorControl/example_experiment_dir/experiment_config.toml" />
     <property name="com.intellij.ide.scratch.LRUPopupBuilder$1/New Scratch File" value="TEXT" />
-    <property name="last_opened_file_path" value="$USER_HOME$/Downloads" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="settings.editor.selected.configurable" value="reference.settingsdialog.IDE.editor.colors" />
@@ -205,7 +244,7 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/control.py" />
-      <option name="PARAMETERS" value="example_experiment_config.json --output_dir=/tmp/control_test/" />
+      <option name="PARAMETERS" value="./example_experiment_dir" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -601,7 +640,42 @@
       <option name="project" value="LOCAL" />
       <updated>1527703359269</updated>
     </task>
-    <option name="localTasksCounter" value="45" />
+    <task id="LOCAL-00045" summary="push step from control, working!">
+      <created>1527771572001</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1527771572001</updated>
+    </task>
+    <task id="LOCAL-00046" summary="update gitignore">
+      <created>1529570178014</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1529570178015</updated>
+    </task>
+    <task id="LOCAL-00047" summary="TOML configuration file">
+      <created>1529571349812</created>
+      <option name="number" value="00047" />
+      <option name="presentableId" value="LOCAL-00047" />
+      <option name="project" value="LOCAL" />
+      <updated>1529571349812</updated>
+    </task>
+    <task id="LOCAL-00048" summary="moving to TOML from JSON for the configuration">
+      <created>1529586368909</created>
+      <option name="number" value="00048" />
+      <option name="presentableId" value="LOCAL-00048" />
+      <option name="project" value="LOCAL" />
+      <updated>1529586368909</updated>
+    </task>
+    <task id="LOCAL-00049" summary="Parse config file">
+      <created>1529592476704</created>
+      <option name="number" value="00049" />
+      <option name="presentableId" value="LOCAL-00049" />
+      <option name="project" value="LOCAL" />
+      <updated>1529592476704</updated>
+    </task>
+    <option name="localTasksCounter" value="50" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -609,18 +683,18 @@
     <editor active="true" />
     <layout>
       <window_info anchor="bottom" id="TODO" order="6" />
-      <window_info anchor="bottom" id="Messages" />
-      <window_info anchor="bottom" id="Event Log" order="7" side_tool="true" weight="0.32957748" />
-      <window_info anchor="right" x="0" y="0" width="430" height="973" id="Documentation" order="6" sideWeight="0.5031645" side_tool="true" visible="true" weight="0.24479167" />
+      <window_info anchor="bottom" id="Messages" order="7" />
+      <window_info anchor="bottom" id="Event Log" order="7" sideWeight="0.5005208" side_tool="true" weight="0.32981783" />
       <window_info anchor="right" id="Json Parser" order="3" weight="0.3296875" />
       <window_info anchor="bottom" id="Database Changes" order="8" show_stripe_button="false" />
       <window_info anchor="bottom" id="Version Control" order="7" />
-      <window_info anchor="bottom" id="Python Console" order="7" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.40645775" />
-      <window_info active="true" anchor="bottom" id="Terminal" order="7" visible="true" weight="0.3164794" />
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.17395833" />
+      <window_info anchor="bottom" id="Python Console" order="7" sideWeight="0.49947917" weight="0.32981783" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.40556088" />
+      <window_info anchor="bottom" id="Terminal" order="7" weight="0.26558006" />
+      <window_info content_ui="combo" id="Project" order="0" weight="0.19895834" />
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
       <window_info anchor="right" id="Database" order="4" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.32885906" />
       <window_info anchor="right" id="SciView" order="5" sideWeight="0.49683544" weight="0.2328125" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
@@ -629,34 +703,35 @@
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
+      <window_info active="true" anchor="right" x="0" y="0" width="430" height="973" id="Documentation" order="6" sideWeight="0.5031645" side_tool="true" visible="true" weight="0.178125" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
-      <window_info anchor="bottom" id="Find" order="1" weight="0.32957748" />
     </layout>
     <layout-to-restore>
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.399623" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.19895834" />
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.40645775" />
+      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
-      <window_info id="Favorites" order="2" side_tool="true" />
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.17395833" />
+      <window_info anchor="right" id="SciView" order="5" sideWeight="0.49683544" weight="0.2328125" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
-      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="bottom" id="TODO" order="6" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.40657276" />
-      <window_info anchor="bottom" id="Find" order="1" weight="0.32957748" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.399623" />
-      <window_info anchor="right" x="0" y="0" width="430" height="975" id="Documentation" order="6" sideWeight="0.5031645" side_tool="true" visible="true" weight="0.2328125" />
+      <window_info anchor="bottom" id="Database Changes" order="13" show_stripe_button="false" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.32885906" />
+      <window_info active="true" anchor="right" x="0" y="0" width="430" height="973" id="Documentation" order="6" sideWeight="0.5031645" side_tool="true" visible="true" weight="0.178125" />
       <window_info anchor="right" id="Database" order="4" />
-      <window_info anchor="bottom" id="Terminal" order="9" weight="0.26148078" />
-      <window_info anchor="bottom" id="Event Log" order="10" side_tool="true" weight="0.32979852" />
-      <window_info anchor="bottom" id="Database Changes" order="12" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Version Control" order="8" />
-      <window_info anchor="right" id="SciView" order="5" sideWeight="0.49683544" visible="true" weight="0.2328125" />
+      <window_info anchor="bottom" id="Messages" order="8" />
+      <window_info anchor="bottom" id="Terminal" order="9" weight="0.26558006" />
+      <window_info anchor="bottom" id="Event Log" order="10" side_tool="true" weight="0.32957748" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="bottom" id="Version Control" order="11" />
+      <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="right" id="Json Parser" order="3" weight="0.3296875" />
-      <window_info anchor="bottom" id="Python Console" order="11" />
+      <window_info active="true" anchor="bottom" id="Python Console" order="12" visible="true" weight="0.32981783" />
     </layout-to-restore>
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -669,11 +744,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="works for 1 client" />
-    <MESSAGE value="redesign working for multiple clients" />
-    <MESSAGE value="stagger interval set to 1.0 second" />
-    <MESSAGE value="keepalive" />
-    <MESSAGE value="limit pool to 2 processes" />
     <MESSAGE value="shuffle" />
     <MESSAGE value="docker on own process" />
     <MESSAGE value="store server data in own json" />
@@ -694,49 +764,19 @@
     <MESSAGE value="added sane defaults for options" />
     <MESSAGE value="server version" />
     <MESSAGE value="step push from control almost working" />
-    <option name="LAST_COMMIT_MESSAGE" value="step push from control almost working" />
+    <MESSAGE value="push step from control, working!" />
+    <MESSAGE value="update gitignore" />
+    <MESSAGE value="TOML configuration file" />
+    <MESSAGE value="moving to TOML from JSON for the configuration" />
+    <MESSAGE value="Parse config file" />
+    <option name="LAST_COMMIT_MESSAGE" value="Parse config file" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <option name="time" value="11" />
+      <option name="time" value="16" />
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/monitor.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="864">
-          <caret line="54" column="16" selection-start-line="54" selection-start-column="16" selection-end-line="54" selection-end-column="16" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/requirements.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="36">
-          <caret line="2" selection-start-line="2" selection-end-line="2" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/control.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1656">
-          <caret line="98" column="37" selection-start-line="98" selection-start-column="37" selection-end-line="98" selection-end-column="37" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/client.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1260">
-          <caret line="71" column="52" selection-start-line="71" selection-start-column="52" selection-end-line="71" selection-end-column="52" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/monitor.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="864">
-          <caret line="54" column="16" selection-start-line="54" selection-start-column="16" selection-end-line="54" selection-end-column="16" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/requirements.txt">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="36">
@@ -905,13 +945,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/.gitignore">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="283">
-          <caret line="80" column="23" selection-start-line="80" selection-start-column="23" selection-end-line="80" selection-end-column="23" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/results/process_results.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="18">
@@ -933,13 +966,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/requirements.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="162">
-          <caret line="9" column="6" selection-start-line="9" selection-start-column="6" selection-end-line="9" selection-end-column="6" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/venv/lib/python3.6/site-packages/ntplib.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-4050">
@@ -951,9 +977,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="990">
           <caret line="61" column="21" selection-start-line="61" selection-start-column="21" selection-end-line="61" selection-end-column="21" />
-          <folding>
-            <element signature="e#0#11#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -978,44 +1001,92 @@
     <entry file="file://$PROJECT_DIR$/control.log">
       <provider selected="true" editor-type-id="LogFileEditorProvider" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/example_experiment_dir/.gitignore">
+    <entry file="file://$PROJECT_DIR$/.gitignore">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="36">
-          <caret line="2" column="11" selection-start-line="2" selection-start-column="11" selection-end-line="2" selection-end-column="11" />
+        <state relative-caret-position="-419">
+          <caret line="80" column="23" selection-start-line="80" selection-start-column="23" selection-end-line="80" selection-end-column="23" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/constants.py">
+    <entry file="file://$PROJECT_DIR$/example_experiment_dir/.gitignore">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="288">
-          <caret line="16" column="13" selection-start-line="16" selection-start-column="13" selection-end-line="16" selection-end-column="13" />
+        <state relative-caret-position="54">
+          <caret line="3" lean-forward="true" selection-start-line="3" selection-end-line="3" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/example_experiment_dir/experiment_config.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="72">
-          <caret line="4" column="4" selection-start-line="4" selection-start-column="4" selection-end-line="4" selection-end-column="4" />
+        <state relative-caret-position="-9">
+          <caret line="6" column="32" selection-start-line="6" selection-start-column="16" selection-end-line="6" selection-end-column="32" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/requirements.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="180">
+          <caret line="10" column="4" selection-start-line="10" selection-start-column="4" selection-end-line="10" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.PyCharm2018.1/system/python_stubs/184617821/builtins.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="218">
+          <caret line="827" column="4" selection-start-line="827" selection-start-column="4" selection-end-line="827" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/client.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-9">
+          <caret line="122" column="39" selection-start-line="122" selection-start-column="39" selection-end-line="122" selection-end-column="39" />
+          <folding>
+            <element signature="e#0#11#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/venv/lib/python3.6/site-packages/toml.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-214">
+          <caret line="801" column="28" selection-start-line="801" selection-start-column="28" selection-end-line="801" selection-end-column="28" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/example_experiment_dir/experiment_config.toml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="450">
+          <caret line="25" column="66" selection-start-line="25" selection-start-column="66" selection-end-line="25" selection-end-column="66" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/config.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1764">
+          <caret line="28" column="46" lean-forward="true" selection-start-line="28" selection-start-column="46" selection-end-line="28" selection-end-column="46" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/control.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="330">
-          <caret line="335" column="78" selection-start-line="335" selection-start-column="78" selection-end-line="335" selection-end-column="78" />
+        <state relative-caret-position="288">
+          <caret line="434" column="55" selection-start-line="434" selection-start-column="55" selection-end-line="434" selection-end-column="55" />
           <folding>
-            <element signature="e#23#36#0" expanded="true" />
+            <element signature="e#23#32#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/client.py">
+    <entry file="file://$PROJECT_DIR$/constants.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="302">
-          <caret line="165" column="55" selection-start-line="165" selection-start-column="55" selection-end-line="165" selection-end-column="55" />
-          <folding>
-            <element signature="e#0#11#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="291">
+          <caret line="32" column="60" selection-start-line="32" selection-start-column="60" selection-end-line="32" selection-end-column="60" />
         </state>
       </provider>
     </entry>
