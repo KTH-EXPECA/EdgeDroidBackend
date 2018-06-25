@@ -207,7 +207,7 @@ class Experiment:
         c['experiment_id'] = self.config.name
         c['client_id'] = client_index
         c['steps'] = len(self.config.trace_steps)
-        c['ports'] = self.config.port_configs[client_index]
+        c['ports'] = self.config.port_configs[client_index]._asdict()
         c['ntp_server'] = self.config.ntp_servers[0]
         # TODO change in the future (to work with more than one server)
         return c
