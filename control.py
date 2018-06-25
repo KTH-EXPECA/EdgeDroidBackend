@@ -210,6 +210,10 @@ class Experiment:
         c['ports'] = self.config.port_configs[client_index]._asdict()
         c['ntp_server'] = self.config.ntp_servers[0]
         # TODO change in the future (to work with more than one server)
+
+        c['fps'] = self.config.trace_fps
+        c['rewind_seconds'] = self.config.rewind_seconds
+        c['max_replays'] = self.config.max_replays
         return c
 
     def _pollNTPServer(self):

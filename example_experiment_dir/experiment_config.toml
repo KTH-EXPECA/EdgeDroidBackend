@@ -8,6 +8,9 @@
     # settings pertaining to the trace used in the experiment
     steps = 7
     dir = "/home/molguin/workspace/CAPerformance_WS/CognitiveAssistance_Traces/lego/HeadTrace2"
+    fps = 15
+    rewind_seconds = 5
+    max_replays = 3
 
 [experiment.ntp]
     # ntp servers used for synchronization

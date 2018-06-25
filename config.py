@@ -127,6 +127,11 @@ class ExperimentConfig:
                 else:
                     self.trace_steps.append(path)
 
+            self.trace_fps = toml_config.find('experiment.trace.fps')
+            self.rewind_seconds = toml_config.find(
+                'experiment.trace.rewind_seconds')
+            self.max_replays = toml_config.find('experiment.trace.max_replays')
+
             self.ntp_servers = toml_config.find('experiment.ntp.servers')
             self.num_cpus = toml_config.find('experiment.performance.cpus')
 
@@ -159,7 +164,10 @@ class ExperimentConfig:
                     'servers': self.ntp_servers
                 },
                 'trace'      : {
-                    'steps': self.trace_steps
+                    'steps'         : self.trace_steps,
+                    'fps'           : self.trace_fps,
+                    'rewind_seconds': self.rewind_seconds,
+                    'max_replays'   : self.max_replays
                 },
                 'performance': {
                     'num_cpus': self.num_cpus
