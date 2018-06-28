@@ -1,6 +1,7 @@
 import os
 from typing import NamedTuple, Dict
 
+import psutil
 import toml
 
 import constants
@@ -133,7 +134,18 @@ class ExperimentConfig:
             self.max_replays = toml_config.find('experiment.trace.max_replays')
 
             self.ntp_servers = toml_config.find('experiment.ntp.servers')
-            self.num_cpus = toml_config.find('experiment.performance.cpus')
+
+            # performance settings
+            self.cpu_cores = toml_config.find(
+                'experiment.performance.cpu_cores')
+
+            if len(self.cpu_cores) == 0:
+                self.cpu_cores = list(range(psutil.cpu_count()))
+
+            self.gen_load = toml_config.find(
+                'experiment.performance.artificial_load')
+            self.target_load = toml_config.find(
+                'experiment.performance.artificial_load_percent')
 
             self.port_configs = []
             for port_cfg in toml_config.find('experiment.ports'):
@@ -170,7 +182,7 @@ class ExperimentConfig:
                     'max_replays'   : self.max_replays
                 },
                 'performance': {
-                    'num_cpus': self.num_cpus
+                    'allocated_cores': self.cpu_cores
                 },
                 'ports'      : self.port_configs
             }

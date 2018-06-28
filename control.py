@@ -141,10 +141,10 @@ class Experiment:
         dck = docker.from_env()
         containers = list()
         try:
-            LOGGER.warning('Limiting containers to {} out of {} CPUs'
-                           .format(config.num_cpus,
-                                   psutil.cpu_count()))
-            cpuset = '{}-{}'.format(0, config.num_cpus - 1)
+            LOGGER.warning(
+                f'Limiting containers to cores {config.cpu_cores} out of '
+                f'{psutil.cpu_count()} CPU cores')
+            cpuset = ','.join(map(str, config.cpu_cores))
 
             for i, port_cfg in enumerate(config.port_configs):
                 LOGGER.info('Launching container {} of {}'
