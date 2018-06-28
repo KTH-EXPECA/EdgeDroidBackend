@@ -105,6 +105,7 @@ class ExperimentConfig:
             self.name = toml_config.find('experiment.name')
             self.clients = toml_config.find('experiment.clients')
             self.runs = toml_config.find('experiment.runs')
+            self.docker_img = toml_config.find('experiment.docker_img')
 
             num_steps = toml_config.find('experiment.trace.steps')
             trace_dir = toml_config.find('experiment.trace.dir')

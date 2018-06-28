@@ -1,6 +1,7 @@
 [experiment]
     # general experiment settings
     name = "LEGOHead2"
+    docker_img = "jamesjue/gabriel-lego"
     clients = 1
     runs = 2
 

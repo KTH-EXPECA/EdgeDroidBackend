@@ -19,7 +19,7 @@ CMD_SYNC_NTP = 0x000000a5
 
 CMD_SHUTDOWN = 0x000000af
 
-LEGO_DOCKER_IMG = 'jamesjue/gabriel-lego'
+# LEGO_DOCKER_IMG = 'jamesjue/gabriel-lego'
 SYSTEM_STATS = 'system_stats.csv'
 SERVER_STATS = 'server_stats.json'
 CLIENT_STATS = '{:02}_stats.json'

@@ -8,25 +8,31 @@ import shlex
 import signal
 import subprocess
 import time
-from multiprocessing import Barrier, Process
 from multiprocessing.pool import Pool
 from random import shuffle
 from socket import *
 
 import click
-import docker
 import ntplib
 import numpy as np
-import psutil
 import toml
 
 import constants
 from client import Client
 from config import ExperimentConfig, RecursiveNestedDict
 from custom_logging.logging import LOGGER
+from docker_manager import DockerManager
 from monitor import ResourceMonitor
 
 CPU_CFS_PERIOD = 100000  # 100 000 microseconds, 100 ms
+
+
+class ShutdownException(Exception):
+    pass
+
+
+def signal_handler(*args):
+    raise ShutdownException()
 
 
 def set_keepalive_linux(sock, after_idle_sec=1, interval_sec=3, max_fails=5):
@@ -48,10 +54,6 @@ def send_step(client, index, checksum, data):
 
 def send_config(client):
     client.send_config()
-
-
-# def fetch_traces(client):
-#     client.fetch_traces()
 
 
 def run_exp(client, stagger_time):
@@ -90,9 +92,7 @@ class Experiment:
         self.tcpdump_proc = None
         self.output_dir = output_dir
 
-        self.docker_barrier = Barrier(2)
-        self.docker_proc = Process(target=Experiment._init_docker,
-                                   args=(self.config, self.docker_barrier))
+        self.docker_proc = DockerManager(self.config)
 
         self.ntp_client = ntplib.NTPClient()
         self.offset = 0
@@ -126,7 +126,6 @@ class Experiment:
             LOGGER.error(e)
 
         try:
-            self.docker_barrier.wait()
             if self.docker_proc:
                 self.docker_proc.join()
         except Exception as e:
@@ -134,51 +133,6 @@ class Experiment:
                 'Something went wrong while shutting down Docker containers'
             )
             LOGGER.error(e)
-
-    @staticmethod
-    def _init_docker(config: ExperimentConfig, barrier: Barrier):
-        LOGGER.info('Spawning Docker containers...')
-        dck = docker.from_env()
-        containers = list()
-        try:
-            LOGGER.warning(
-                f'Limiting containers to cores {config.cpu_cores} out of '
-                f'{psutil.cpu_count()} CPU cores')
-            cpuset = ','.join(map(str, config.cpu_cores))
-
-            for i, port_cfg in enumerate(config.port_configs):
-                LOGGER.info('Launching container {} of {}'
-                            .format(i + 1, len(config.port_configs)))
-
-                containers.append(
-                    dck.containers.run(
-                        constants.LEGO_DOCKER_IMG,
-                        detach=True,
-                        auto_remove=True,
-                        ports={
-                            constants.DEFAULT_VIDEO_PORT  : port_cfg.video,
-                            constants.DEFAULT_RESULT_PORT : port_cfg.result,
-                            constants.DEFAULT_CONTROL_PORT: port_cfg.control
-                        },
-                        cpuset_cpus=cpuset
-                    )
-                )
-
-            LOGGER.info('Wait for container warm up...')
-            time.sleep(5)
-            LOGGER.info('Initialization done')
-
-            barrier.wait()
-
-        except InterruptedError:
-            pass
-        except Exception as e:
-            LOGGER.critical("Error while spawning Docker containers!")
-            raise e
-        finally:
-            LOGGER.warning('Shutting down containers...')
-            for cont in containers:
-                cont.kill()
 
     def _init_tcpdump(self, run_path: str):
         LOGGER.info('Initializing TCP dump...')
@@ -241,6 +195,7 @@ class Experiment:
     def execute(self):
         server_socket = None
         error = None
+
         try:
             with socket(AF_INET, SOCK_STREAM) as server_socket:
                 server_socket.bind((self.host, self.port))
@@ -252,8 +207,19 @@ class Experiment:
                 LOGGER.info('Waiting for {} clients to connect...'
                             .format(self.config.clients))
 
+                # disable signal handlers temporarily
+                signal.signal(signal.SIGINT, signal.SIG_IGN)
+                signal.signal(signal.SIGTERM, signal.SIG_IGN)
+
+                # start docker process
+                self.docker_proc.start()
+
                 with Pool(2) as pool:
-                    self.docker_proc.start()
+
+                    # set new handlers *inside* the pool context, so that the
+                    #  worker processes inherit the SIG_IGN handlers
+                    signal.signal(signal.SIGINT, signal_handler)
+                    signal.signal(signal.SIGTERM, signal_handler)
 
                     config_send = []
                     for i in range(self.config.clients):
@@ -406,8 +372,12 @@ class Experiment:
                                 'run_end'      : end_timestamp + self.offset
                             }, f)
 
+        except ShutdownException:
+            pass
+
         except Exception as e:
             error = e
+
         finally:
             try:
                 if server_socket:
