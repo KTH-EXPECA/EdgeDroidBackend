@@ -320,6 +320,7 @@ class Experiment:
                     step_data
                 )
 
+                # TODO: refactor ugly nested for.
                 for index, chksum, data in steps:
                     for chunk in chunks:
                         for c in chunk:
@@ -333,6 +334,7 @@ class Experiment:
                     self.__execute_run(r)
 
         except ShutdownException:
+            # TODO: fix shutdown
             pass
 
         except Exception as e:
