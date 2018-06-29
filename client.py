@@ -1,151 +1,181 @@
-import json
 import socket
-import struct
+import time
+from threading import Thread, Event, Condition, RLock
+from queue import Queue, Empty
 
 import constants
 from custom_logging.logging import LOGGER
-
-MAX_CHUNK_SIZE = 2048
-
-
-def recvall(conn, length):
-    total_recv = 0
-    data = []
-    while total_recv < length:
-        d = conn.recv(min(length - total_recv, MAX_CHUNK_SIZE))
-        if d == b'':
-            raise RuntimeError('socket connection broken')
-        data.append(d)
-        total_recv += len(d)
-    return b''.join(data)
+from net_utils import *
 
 
-def recvJSON(conn):
-    length_b = recvall(conn, 4)
-    (length,) = struct.unpack('>I', length_b)
+class NullClient:
+    def __init__(self, *args):
+        pass
 
-    json_b = recvall(conn, length)
-    try:
-        assert len(json_b) == length
-    except AssertionError:
-        print('len(json_b)', len(json_b))
-        print('length', length)
-        raise
+    def wait_for_tasks(self):
+        pass
 
-    # total_parsed = 0
-    # json_s = ''
-    # while total_parsed < length:
-    #     parsed_s = struct.unpack('>{l}s'.format(l=min(length,
-    #                                                   MAX_CHUNK_SIZE)),
-    # json_b)
+    def shutdown(self):
+        pass
 
-    (json_s,) = struct.unpack('>{l}s'.format(l=len(json_b)), json_b)
-    return json.loads(json_s.decode('utf-8'))
+    def ntp_sync(self):
+        pass
 
+    def fetch_stats(self):
+        pass
 
-def sendJSON(conn, dict_data):
-    json_data = json.dumps(dict_data,
-                           separators=(',', ':')).encode('utf-8')
-    length = len(json_data)
-    buf = struct.pack('>I{l}s'.format(l=length), length, json_data)
-    conn.sendall(buf)
+    def get_stats(self):
+        pass
+
+    def send_config(self):
+        pass
+
+    def execute_experiment(self, init_offset):
+        pass
+
+    def send_step(self, index, checksum, data):
+        pass
 
 
-class Client:
-    '''
-    Local representation of a remote client
+class AsyncClient(NullClient):
+    """
+        Local representation of a remote client
 
-    Client message format:
+        Client message format:
 
-    0               31
-    -----------------
-    | CMD_ID: INT32 |
-    -----------------
-    | LEN: INT32    |
-    -----------------
-    |               |
-    | PAYLOAD: LEN  |
-    |               |
-    |      ...      |
-    -----------------
+        0               31
+        -----------------
+        | CMD_ID: INT32 |
+        -----------------
+        | LEN: INT32    |
+        -----------------
+        |               |
+        | PAYLOAD: LEN  |
+        |               |
+        |      ...      |
+        -----------------
 
-    '''
+    """
 
-    def __init__(self, conn, addr, config):
+    def __init__(self, conn, address, config):
+        super(AsyncClient, self).__init__()
         self.config = config
         self.conn = conn
-        self.addr = addr
+        self.address = address
         self.stats = None
 
-    def close(self):
+        self.op_queue = Queue()
+        self.shutdown_flag = Event()
+        self.stats_cond = Condition(lock=RLock())
+
+        self.worker = Thread(target=AsyncClient.__worker_run, args=(self,))
+        self.worker.start()
+
+    def __enqueue_task(self, fn, *args, **kwargs):
+        self.op_queue.put((fn, args, kwargs))
+
+    def wait_for_tasks(self):
+        self.op_queue.join()
+
+    def shutdown(self):
+        # not asynchronous by design
+        LOGGER.warning(f'Shutting down client %d...', self.config['client_id'])
+
+        # wait for worker thread to finish the current task
+        self.shutdown_flag.set()
+        self.worker.join()
+
+        buf = struct.pack('>I', constants.CMD_SHUTDOWN)
+        self.conn.sendall(buf)
         self.conn.shutdown(socket.SHUT_RDWR)
         self.conn.close()
 
-    def shutdown(self):
-        buf = struct.pack('>I', constants.CMD_SHUTDOWN)
-        self.conn.sendall(buf)
-        self.close()
+        LOGGER.warning(f'Client %d shut down.', self.config['client_id'])
 
-    def _check_config(self):
-        if not self.config:
-            raise RuntimeError('No config set for client {}!'.format(self.addr))
+    def __worker_run(self):
+        while not self.shutdown_flag.is_set():
+            try:
+                # wait until an operation is available and then execute
+                op, args, kwargs = self.op_queue.get(block=True, timeout=0.1)
+                op(*(self, *args), **kwargs)
+                self.op_queue.task_done()
+            except (InterruptedError, Empty):
+                pass
+            except Exception as e:
+                self.shutdown_flag.set()
+                raise e
 
-    def get_remote_stats(self):
-        buf = struct.pack('>I', constants.CMD_PULL_STATS)
-        self.conn.sendall(buf)
-
-        self.stats = recvJSON(self.conn)
-
-        return self.stats
-
-    def _wait_for_confirmation(self):
+    def __wait_for_confirmation(self):
         # wait for confirmation by client
         # client sends back a byte with value 0x00000001 when ready
         confirmation_b = recvall(self.conn, 4)
         (confirmation,) = struct.unpack('>I', confirmation_b)
         if confirmation != constants.STATUS_SUCCESS:
             raise Exception(
-                'Client {}: error on confirmation!'.format(self.addr))
+                f'Client {self.address}: error on confirmation!')
+
+    def ntp_sync(self):
+        self.__enqueue_task(AsyncClient.__ntp_sync)
+
+    def __ntp_sync(self):
+        buf = struct.pack('>I', constants.CMD_SYNC_NTP)
+        self.conn.sendall(buf)
+        self.__wait_for_confirmation()
+
+    def fetch_stats(self):
+        self.__enqueue_task(AsyncClient.__get_stats)
+
+    def get_stats(self):
+        with self.stats_cond:
+            while not self.stats:
+                self.stats_cond.wait()
+        return self.stats
+
+    def __get_stats(self):
+        buf = struct.pack('>I', constants.CMD_PULL_STATS)
+        self.conn.sendall(buf)
+        incoming_stats = recvJSON(self.conn)
+
+        with self.stats_cond:
+            self.stats = incoming_stats
+            self.stats_cond.notify_all()
 
     def send_config(self):
-        self._check_config()
+        self.__enqueue_task(AsyncClient.__send_config)
+
+    def __send_config(self):
+        LOGGER.info('Sending config to client %d...',
+                    self.config['client_id'])
         buf = struct.pack('>I', constants.CMD_PUSH_CONFIG)
         self.conn.sendall(buf)
         sendJSON(self.conn, self.config)
-        self._wait_for_confirmation()
+        self.__wait_for_confirmation()
 
-    # def fetch_traces(self):
-    #     self._check_config()
-    #     LOGGER.info('Fetching traces: client %d...', self.config['client_id'])
-    #     buf = struct.pack('>I', constants.CMD_FETCH_TRACES)
-    #     self.conn.sendall(buf)
-    #     self._wait_for_confirmation()
-    #     LOGGER.info('Fetching traces: client %d done!',
-    #                 self.config['client_id'])
+    def execute_experiment(self, init_offset):
+        self.__enqueue_task(AsyncClient.__run_experiment, init_offset)
 
-    def run_experiment(self):
+    def __run_experiment(self, init_offset):
+        time.sleep(init_offset)  # TODO: maybe make more accurate?
         LOGGER.info('Client %d starting experiment!',
                     self.config['client_id'])
 
         buf = struct.pack('>I', constants.CMD_START_EXP)
         self.conn.sendall(buf)
-        self._wait_for_confirmation()
+        self.__wait_for_confirmation()
 
-    def wait_for_experiment_finish(self):
+        # wait for experiment finish
         confirmation_b = recvall(self.conn, 4)
         (confirmation,) = struct.unpack('>I', confirmation_b)
         if confirmation != constants.MSG_EXPERIMENT_FINISH:
             raise RuntimeError(
-                'Client {}: error on experiment finish!'.format(self.addr))
+                f'Client {self.address}: error on experiment finish!')
 
         LOGGER.info('Client %d done!', self.config['client_id'])
 
-    def ntp_sync(self):
-        buf = struct.pack('>I', constants.CMD_SYNC_NTP)
-        self.conn.sendall(buf)
-        self._wait_for_confirmation()
-
     def send_step(self, index, checksum, data):
+        self.__enqueue_task(AsyncClient.__send_step, index, checksum, data)
+
+    def __send_step(self, index, checksum, data):
         # first build and send header
         hdr = {
             constants.STEP_METADATA_INDEX : index,
@@ -153,14 +183,14 @@ class Client:
             constants.STEP_METADATA_CHKSUM: checksum
         }
 
-        LOGGER.info('Checking step %d, client %d',
-                    index, self.config['client_id'])
+        LOGGER.info('Client %d checking step %d',
+                    self.config['client_id'], index)
 
         buf = struct.pack('>I', constants.CMD_PUSH_STEP)
         self.conn.sendall(buf)
         sendJSON(self.conn, hdr)
         try:
-            self._wait_for_confirmation()
+            self.__wait_for_confirmation()
             LOGGER.info('Client %d already has step %d!',
                         self.config['client_id'], index)
             # client already had the step file
@@ -177,4 +207,4 @@ class Client:
                     index, self.config['client_id'], len(data))
 
         self.conn.sendall(data)
-        self._wait_for_confirmation()
+        self.__wait_for_confirmation()

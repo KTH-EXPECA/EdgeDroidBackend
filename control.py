@@ -21,7 +21,7 @@ from config import ExperimentConfig, RecursiveNestedDict
 from custom_logging.logging import LOGGER
 from docker_manager import DockerManager
 from monitor import ResourceMonitor
-from new_client import AsyncClient, NullClient
+from client import AsyncClient, NullClient
 
 CPU_CFS_PERIOD = 100000  # 100 000 microseconds, 100 ms
 
