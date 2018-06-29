@@ -84,7 +84,6 @@ class Client:
     def shutdown(self):
         buf = struct.pack('>I', constants.CMD_SHUTDOWN)
         self.conn.sendall(buf)
-
         self.close()
 
     def _check_config(self):
