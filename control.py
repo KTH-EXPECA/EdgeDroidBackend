@@ -8,7 +8,6 @@ import shlex
 import signal
 import subprocess
 import time
-from multiprocessing.pool import Pool
 from random import shuffle
 from socket import *
 
@@ -18,13 +17,18 @@ import numpy as np
 import toml
 
 import constants
-from client import Client
 from config import ExperimentConfig, RecursiveNestedDict
 from custom_logging.logging import LOGGER
 from docker_manager import DockerManager
 from monitor import ResourceMonitor
+from new_client import AsyncClient, NullClient
 
 CPU_CFS_PERIOD = 100000  # 100 000 microseconds, 100 ms
+
+
+def grouper(iterable, n, fillvalue=None):
+    args = [iter(iterable)] * n
+    return list(itertools.zip_longest(*args, fillvalue=fillvalue))
 
 
 class ShutdownException(Exception):
@@ -36,42 +40,16 @@ def signal_handler(*args):
 
 
 def set_keepalive_linux(sock, after_idle_sec=1, interval_sec=3, max_fails=5):
-    """Set TCP keepalive on an open socket.
+    '''Set TCP keepalive on an open socket.
 
     It activates after 1 second (after_idle_sec) of idleness,
     then sends a keepalive ping once every 3 seconds (interval_sec),
     and closes the connection after 5 failed ping (max_fails), or 15 seconds
-    """
+    '''
     sock.setsockopt(SOL_SOCKET, SO_KEEPALIVE, 1)
     sock.setsockopt(IPPROTO_TCP, TCP_KEEPIDLE, after_idle_sec)
     sock.setsockopt(IPPROTO_TCP, TCP_KEEPINTVL, interval_sec)
     sock.setsockopt(IPPROTO_TCP, TCP_KEEPCNT, max_fails)
-
-
-def send_step(client, index, checksum, data):
-    client.send_step(index, checksum, data)
-
-
-def send_config(client):
-    client.send_config()
-
-
-def run_exp(client, stagger_time):
-    time.sleep(stagger_time)
-    client.run_experiment()
-    client.wait_for_experiment_finish()
-
-
-def close_conn(client):
-    client.close()
-
-
-def ntp_sync(client):
-    client.ntp_sync()
-
-
-def get_stats(client):
-    return client.get_remote_stats()
 
 
 class Experiment:
@@ -192,6 +170,100 @@ class Experiment:
         LOGGER.info('Got NTP offset from %s', self.config.ntp_servers[0])
         LOGGER.info('Offset: %f ms', self.offset)
 
+    def __execute_run(self, run_index):
+        LOGGER.info('Executing run %d out of %d',
+                    run_index + 1, self.config.runs)
+
+        run_path = self.output_dir + f'/run_{run_index + 1}/'
+        if os.path.exists(run_path) and not os.path.isdir(run_path):
+            raise RuntimeError(f'Output path {run_path} already '
+                               'exists and is not a directory!')
+        elif os.path.isdir(run_path):
+            pass
+        else:
+            os.mkdir(run_path)
+
+        # sync NTP
+        self._pollNTPServer()
+
+        LOGGER.info('Trigger client NTP sync')
+        for client in self.clients:
+            client.ntp_sync()
+
+        self._init_tcpdump(run_path)
+        LOGGER.info('TCPdump warmup...')
+        time.sleep(5)
+
+        # make sure all clients are done syncing NTP before starting the
+        # experiment
+        for client in self.clients:
+            client.wait_for_tasks()
+
+        # All clients are ready, now let's run the experiment!
+        shuffle(self.clients)  # shuffle clients before each run
+
+        # Randomly offset client experiment start to avoid weird
+        # synchronous effects on the processing times...
+        start_times = np.random.uniform(
+            0,
+            constants.DEFAULT_START_WINDOW,
+            len(self.clients))
+
+        LOGGER.info('Execute experiment!')
+        LOGGER.info('Starting resource monitor...')
+        monitor = ResourceMonitor(self.offset)
+        monitor.start()
+
+        start_timestamp = time.time() * 1000.0
+
+        # finally, actually trigger the experiment on the clients...
+        # asynchronously, of course
+        for client, init_offset in zip(self.clients, start_times):
+            client.execute_experiment(init_offset)
+
+        # wait for the experiment to finish
+        for client in self.clients:
+            client.wait_for_tasks()
+
+        end_timestamp = time.time() * 1000.0
+
+        LOGGER.info('Shut down monitor.')
+        system_stats = monitor.shutdown()
+
+        time.sleep(1)
+        LOGGER.info('Terminate TCPDUMP')
+        self.tcpdump_proc.send_signal(signal.SIGINT)
+        self.tcpdump_proc.wait()
+
+        LOGGER.info('Get stats from clients!')
+        for client in self.clients:
+            client.fetch_stats()  # asynchronously triggers fetching stats
+
+        # store this runs' system stats
+        with open(run_path + constants.SYSTEM_STATS, 'w') as f:
+            fieldnames = ['cpu_load', 'mem_avail', 'timestamp']
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(system_stats)
+
+        # store the client stats
+        stats = [c.get_stats() for c in self.clients]
+        for stat_coll in stats:
+            client_index = stat_coll['client_id']
+            with open(run_path +
+                      constants.CLIENT_STATS.format(
+                          client_index
+                      ), 'w') as f:
+                json.dump(stat_coll, f)
+
+        # save server stats:
+        with open(run_path + constants.SERVER_STATS, 'w') as f:
+            json.dump({
+                'server_offset': self.offset,
+                'run_start'    : start_timestamp + self.offset,
+                'run_end'      : end_timestamp + self.offset
+            }, f)
+
     def execute(self):
         server_socket = None
         error = None
@@ -201,176 +273,64 @@ class Experiment:
                 server_socket.bind((self.host, self.port))
                 server_socket.listen(self.config.clients)
                 server_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-                LOGGER.info('Listening on {}:{}'.format(self.host, self.port))
+                LOGGER.info('Listening on %s:%d', self.host, self.port)
 
                 # accept N clients for the experiment
-                LOGGER.info('Waiting for {} clients to connect...'
-                            .format(self.config.clients))
+                LOGGER.info('Waiting for %d clients to connect...',
+                            self.config.clients)
 
-                # disable signal handlers temporarily
-                signal.signal(signal.SIGINT, signal.SIG_IGN)
-                signal.signal(signal.SIGTERM, signal.SIG_IGN)
+                signal.signal(signal.SIGINT, signal_handler)
+                signal.signal(signal.SIGTERM, signal_handler)
 
                 # start docker process
                 self.docker_proc.start()
 
-                with Pool(2) as pool:
+                # wait for all clients to connect
+                for i in range(self.config.clients):
+                    conn, addr = server_socket.accept()
+                    set_keepalive_linux(conn, max_fails=100)  # 5 minutes
 
-                    # set new handlers *inside* the pool context, so that the
-                    #  worker processes inherit the SIG_IGN handlers
-                    signal.signal(signal.SIGINT, signal_handler)
-                    signal.signal(signal.SIGTERM, signal_handler)
+                    client = AsyncClient(conn, addr,
+                                         self._gen_config_for_client(i))
 
-                    config_send = []
-                    for i in range(self.config.clients):
-                        conn, addr = server_socket.accept()
-                        set_keepalive_linux(conn, max_fails=100)  # 5 minutes
-                        client = Client(conn, addr,
-                                        self._gen_config_for_client(i))
-                        self.clients.append(client)
+                    self.clients.append(client)
 
-                        LOGGER.info(
-                            '{} out of {} clients connected: {}:{}'.format(
-                                i + 1, self.config.clients, *addr
-                            ))
+                    LOGGER.info(
+                        '{} out of {} clients connected: {}:{}'.format(
+                            i + 1, self.config.clients, *addr))
+                    # send config
+                    client.send_config()
 
-                        LOGGER.info("Sending config...")
-                        config_send.append(
-                            pool.apply_async(send_config, args=(client,))
-                        )
+                # wait for clients to finish sending configs
+                for c in self.clients:
+                    c.wait_for_tasks()
 
-                    for result in config_send:
-                        result.wait()
+                # send traces, two clients at the time
+                LOGGER.info('Pushing step files to clients...')
+                chunks = grouper(self.clients, 2, fillvalue=NullClient())
 
-                    # have the clients fetch traces 2 at the time to avoid
-                    # congestion in the network
-                    # LOGGER.info("Triggering trace download...")
-                    # pool.map(fetch_traces, self.clients)
+                # use list comprehensions to avoid laziness (map())
+                step_data = [open(p, 'rb').read() for p in
+                             self.config.trace_steps]
+                step_chksums = [hashlib.md5(d).hexdigest() for d in step_data]
 
-                    LOGGER.info("Pushing step files to clients...")
-                    for i, path in enumerate(self.config.trace_steps):
-                        with open(path, 'rb') as step:
-                            step_data = step.read()
-                            checksum = hashlib.md5(step_data).hexdigest()
+                steps = zip(
+                    itertools.count(start=1),
+                    step_chksums,
+                    step_data
+                )
 
-                        pool.starmap(send_step,
-                                     zip(
-                                         self.clients,
-                                         itertools.repeat(i + 1),
-                                         itertools.repeat(checksum),
-                                         itertools.repeat(step_data)
-                                     ))
+                for index, chksum, data in steps:
+                    for chunk in chunks:
+                        for c in chunk:
+                            c.send_step(index, chksum, data)
 
-                    for r in range(self.config.runs):
-                        LOGGER.info('Executing run {} out of {}'.format(
-                            r + 1, self.config.runs
-                        ))
+                        for c in chunk:
+                            c.wait_for_tasks()
 
-                        run_path = self.output_dir + '/run_{}/'.format(r + 1)
-                        if os.path.exists(run_path):
-                            if not os.path.isdir(run_path):
-                                raise RuntimeError('Output path {} already '
-                                                   'exists and is not a '
-                                                   'directory!'.format(run_path)
-                                                   )
-                        else:
-                            os.mkdir(run_path)
-
-                        self._pollNTPServer()
-
-                        LOGGER.info('Trigger client NTP sync')
-                        pool.map(ntp_sync, self.clients)
-
-                        self._init_tcpdump(run_path)
-                        LOGGER.info('TCPdump warmup...')
-                        time.sleep(5)
-
-                        LOGGER.info('Starting resource monitor...')
-                        monitor = ResourceMonitor(self.offset)
-                        monitor.start()
-
-                        # All clients are ready, now let's run the experiment!
-                        # Stagger client experiment start to avoid weird
-                        # synchronous
-                        # effects on the processing times...
-                        LOGGER.info('Execute experiment!')
-
-                        # shuffle clients before each run
-                        shuffle(self.clients)
-
-                        # for client in self.clients:
-                        #    time.sleep(constants.DEFAULT_STAGGER_INTERVAL)
-                        #    client.run_experiment()
-
-                        # self.clients.clear()
-
-                        start_times = np.random.uniform(
-                            0,
-                            constants.DEFAULT_START_WINDOW,
-                            len(self.clients)
-                        )
-
-                        start_timestamp = time.time() * 1000.0
-                        with Pool(len(self.clients)) as exec_pool:
-                            exec_pool.starmap(
-                                run_exp,
-                                zip(self.clients, start_times)
-                            )
-                        end_timestamp = time.time() * 1000.0
-
-                        # LOGGER.info('Waiting for {} clients to
-                        # reconnect...'
-                        #       .format(self.config['clients']))
-
-                        # for i in range(self.config['clients']):
-                        #     conn, addr = server_socket.accept()
-                        #     set_keepalive_linux(conn,
-                        #                         max_fails=100)  # 5 minutes
-                        #     self.clients.append(Client(conn, addr))
-                        #     LOGGER.info(
-                        #         '{} out of {} clients '
-                        #         'reconnected: {}:{}'.format(
-                        #             i + 1, self.config['clients'], *addr
-                        #         )
-                        #     )
-
-                        # all clients reconnected
-                        # wait a second before terminating TCPdump
-                        LOGGER.info('Shut down monitor.')
-                        system_stats = monitor.shutdown()
-
-                        time.sleep(1)
-                        LOGGER.info('Terminate TCPDUMP')
-                        self.tcpdump_proc.send_signal(signal.SIGINT)
-                        self.tcpdump_proc.wait()
-
-                        LOGGER.info('Get stats from clients!')
-                        stats = pool.map(get_stats, self.clients)
-
-                        # store this runs' system stats
-                        with open(run_path + constants.SYSTEM_STATS, 'w') as f:
-                            fieldnames = ['cpu_load', 'mem_avail', 'timestamp']
-                            writer = csv.DictWriter(f, fieldnames=fieldnames)
-                            writer.writeheader()
-                            writer.writerows(system_stats)
-
-                        # store the client stats
-                        for stat_coll in stats:
-                            # stat_coll['server_offset'] = self.offset
-                            client_index = stat_coll['client_id']
-                            with open(run_path +
-                                      constants.CLIENT_STATS.format(
-                                          client_index
-                                      ), 'w') as f:
-                                json.dump(stat_coll, f)
-
-                        # save server stats:
-                        with open(run_path + constants.SERVER_STATS, 'w') as f:
-                            json.dump({
-                                'server_offset': self.offset,
-                                'run_start'    : start_timestamp + self.offset,
-                                'run_end'      : end_timestamp + self.offset
-                            }, f)
+                # execute runs!
+                for r in range(self.config.runs):
+                    self.__execute_run(r)
 
         except ShutdownException:
             pass

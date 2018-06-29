@@ -1,13 +1,43 @@
 import socket
+import time
 from threading import Thread, Event, Condition, RLock
-from queue import Queue
+from queue import Queue, Empty
 
 import constants
 from custom_logging.logging import LOGGER
 from net_utils import *
 
 
-class Client:
+class NullClient:
+    def __init__(self, *args):
+        pass
+
+    def wait_for_tasks(self):
+        pass
+
+    def shutdown(self):
+        pass
+
+    def ntp_sync(self):
+        pass
+
+    def fetch_stats(self):
+        pass
+
+    def get_stats(self):
+        pass
+
+    def send_config(self):
+        pass
+
+    def execute_experiment(self, init_offset):
+        pass
+
+    def send_step(self, index, checksum, data):
+        pass
+
+
+class AsyncClient(NullClient):
     """
         Local representation of a remote client
 
@@ -28,6 +58,7 @@ class Client:
     """
 
     def __init__(self, conn, address, config):
+        super(AsyncClient, self).__init__()
         self.config = config
         self.conn = conn
         self.address = address
@@ -37,33 +68,42 @@ class Client:
         self.shutdown_flag = Event()
         self.stats_cond = Condition(lock=RLock())
 
-        self.worker = Thread(target=Client.__worker_run, args=(self,))
+        self.worker = Thread(target=AsyncClient.__worker_run, args=(self,))
         self.worker.start()
+
+    def __enqueue_task(self, fn, *args, **kwargs):
+        self.op_queue.put((fn, args, kwargs))
 
     def wait_for_tasks(self):
         self.op_queue.join()
 
-    def close(self):
-        self.op_queue.put(Client.__close)
+    def shutdown(self):
+        # not asynchronous by design
+        LOGGER.warning(f'Shutting down client %d...', self.config['client_id'])
 
-    def __close(self):
+        # wait for worker thread to finish the current task
+        self.shutdown_flag.set()
+        self.worker.join()
+
+        buf = struct.pack('>I', constants.CMD_SHUTDOWN)
+        self.conn.sendall(buf)
         self.conn.shutdown(socket.SHUT_RDWR)
         self.conn.close()
 
-    def shutdown(self):
-        self.op_queue.put((Client.__shutdown,))
-
-    def __shutdown(self):
-        buf = struct.pack('>I', constants.CMD_SHUTDOWN)
-        self.conn.sendall(buf)
-        self.__close()
+        LOGGER.warning(f'Client %d shut down.', self.config['client_id'])
 
     def __worker_run(self):
         while not self.shutdown_flag.is_set():
-            # wait until an operation is available and then execute
-            op, args = self.op_queue.get(block=True)
-            op(*(self, *args))
-            self.op_queue.task_done()
+            try:
+                # wait until an operation is available and then execute
+                op, args, kwargs = self.op_queue.get(block=True, timeout=0.1)
+                op(*(self, *args), **kwargs)
+                self.op_queue.task_done()
+            except (InterruptedError, Empty):
+                pass
+            except Exception as e:
+                self.shutdown_flag.set()
+                raise e
 
     def __wait_for_confirmation(self):
         # wait for confirmation by client
@@ -75,7 +115,7 @@ class Client:
                 f'Client {self.address}: error on confirmation!')
 
     def ntp_sync(self):
-        self.op_queue.put((Client.__ntp_sync,))
+        self.__enqueue_task(AsyncClient.__ntp_sync)
 
     def __ntp_sync(self):
         buf = struct.pack('>I', constants.CMD_SYNC_NTP)
@@ -83,7 +123,7 @@ class Client:
         self.__wait_for_confirmation()
 
     def fetch_stats(self):
-        self.op_queue.put((Client.__get_stats,))
+        self.__enqueue_task(AsyncClient.__get_stats)
 
     def get_stats(self):
         with self.stats_cond:
@@ -101,18 +141,21 @@ class Client:
             self.stats_cond.notify_all()
 
     def send_config(self):
-        self.op_queue.put((Client.__send_config,))
+        self.__enqueue_task(AsyncClient.__send_config)
 
     def __send_config(self):
+        LOGGER.info('Sending config to client %d...',
+                    self.config['client_id'])
         buf = struct.pack('>I', constants.CMD_PUSH_CONFIG)
         self.conn.sendall(buf)
         sendJSON(self.conn, self.config)
         self.__wait_for_confirmation()
 
-    def execute_experiment(self):
-        self.op_queue.put((Client.__run_experiment,))
+    def execute_experiment(self, init_offset):
+        self.__enqueue_task(AsyncClient.__run_experiment, init_offset)
 
-    def __run_experiment(self):
+    def __run_experiment(self, init_offset):
+        time.sleep(init_offset)  # TODO: maybe make more accurate?
         LOGGER.info('Client %d starting experiment!',
                     self.config['client_id'])
 
@@ -130,8 +173,7 @@ class Client:
         LOGGER.info('Client %d done!', self.config['client_id'])
 
     def send_step(self, index, checksum, data):
-        self.op_queue.put((Client.__send_step,
-                           (index, checksum, data)))
+        self.__enqueue_task(AsyncClient.__send_step, index, checksum, data)
 
     def __send_step(self, index, checksum, data):
         # first build and send header
