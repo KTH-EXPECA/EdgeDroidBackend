@@ -4,8 +4,6 @@
     <list default="true" id="2ecc3be1-d00b-4c4e-be0d-55a8549fe72f" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/control.py" beforeDir="false" afterPath="$PROJECT_DIR$/control.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/example_experiment_dir/experiment_config.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/new_client.py" beforeDir="false" afterPath="$PROJECT_DIR$/new_client.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -16,60 +14,10 @@
   </component>
   <component name="CoverageDataManager">
     <SUITE FILE_PATH="coverage/ControlBackend$monitor.coverage" NAME="monitor Coverage Results" MODIFIED="1524570465573" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/GabrielClientEmulatorControl$control.coverage" NAME="control Coverage Results" MODIFIED="1530286341352" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/GabrielClientEmulatorControl$control.coverage" NAME="control Coverage Results" MODIFIED="1530523565560" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ControlBackend$control.coverage" NAME="control Coverage Results" MODIFIED="1524753088242" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/GabrielClientEmulatorControl$lego_timing.coverage" NAME="lego_timing Coverage Results" MODIFIED="1525424641389" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/results" />
     <SUITE FILE_PATH="coverage/GabrielClientEmulatorControl$process_results.coverage" NAME="process_results Coverage Results" MODIFIED="1525528792881" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/results" />
-  </component>
-  <component name="DockManager">
-    <window id="2">
-      <content type="file-editors">
-        <state>
-          <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-            <file leaf-file-name="new_client.py" pinned="false" current-in-tab="true">
-              <entry file="file://$PROJECT_DIR$/new_client.py">
-                <provider selected="true" editor-type-id="text-editor">
-                  <state relative-caret-position="576">
-                    <caret line="101" column="43" selection-start-line="101" selection-start-column="43" selection-end-line="101" selection-end-column="43" />
-                    <folding>
-                      <element signature="e#0#13#0" expanded="true" />
-                      <element signature="e#199#624#0" />
-                      <element signature="e#234#238#0" />
-                      <element signature="e#278#282#0" />
-                      <element signature="e#351#355#0" />
-                      <element signature="e#389#393#0" />
-                      <element signature="e#430#434#0" />
-                      <element signature="e#469#473#0" />
-                      <element signature="e#510#514#0" />
-                      <element signature="e#558#629#0" />
-                      <element signature="e#620#624#0" />
-                      <element signature="e#196#576#1" />
-                      <element signature="e#1109#1436#0" />
-                      <element signature="e#995#1015#0" />
-                      <element signature="e#1562#2031#0" />
-                      <element signature="e#1699#2057#0" />
-                      <element signature="e#1699#1732#0" />
-                      <element signature="e#1975#2057#0" />
-                      <element signature="e#3061#3082#0" />
-                      <element signature="e#2166#2283#0" />
-                      <element signature="e#3294#3315#0" />
-                      <element signature="e#2395#2515#0" />
-                      <element signature="e#2429#2489#0" />
-                      <element signature="e#2552#2789#0" />
-                      <element signature="e#2721#2789#0" />
-                      <element signature="e#3804#3825#0" />
-                      <element signature="e#2907#3168#0" />
-                      <element signature="e#3917#4512#0" />
-                      <element signature="e#3738#3828#0" />
-                    </folding>
-                  </state>
-                </provider>
-              </entry>
-            </file>
-          </leaf>
-        </state>
-      </content>
-    </window>
   </component>
   <component name="FavoritesManager">
     <favorites_list name="GabrielClientEmulatorControl" />
@@ -79,8 +27,8 @@
       <file leaf-file-name="control.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/control.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="421">
-              <caret line="187" selection-start-line="187" selection-end-line="187" />
+            <state relative-caret-position="248">
+              <caret line="337" lean-forward="true" selection-start-line="337" selection-end-line="337" />
               <folding>
                 <element signature="e#23#32#0" expanded="true" />
               </folding>
@@ -167,8 +115,8 @@
         <option value="$PROJECT_DIR$/docker_manager.py" />
         <option value="$PROJECT_DIR$/client.py" />
         <option value="$PROJECT_DIR$/utils.py" />
-        <option value="$PROJECT_DIR$/control.py" />
         <option value="$PROJECT_DIR$/new_client.py" />
+        <option value="$PROJECT_DIR$/control.py" />
       </list>
     </option>
   </component>
@@ -354,27 +302,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1524490271882</updated>
-    </task>
-    <task id="LOCAL-00007" summary="automatically spawn docker instances to handle incoming connections">
-      <created>1525252951815</created>
-      <option name="number" value="00007" />
-      <option name="presentableId" value="LOCAL-00007" />
-      <option name="project" value="LOCAL" />
-      <updated>1525252951815</updated>
-    </task>
-    <task id="LOCAL-00008" summary="tcpdump without sudo!">
-      <created>1525256893776</created>
-      <option name="number" value="00008" />
-      <option name="presentableId" value="LOCAL-00008" />
-      <option name="project" value="LOCAL" />
-      <updated>1525256893776</updated>
-    </task>
-    <task id="LOCAL-00009" summary="add option to specify output folder for results">
-      <created>1525266054539</created>
-      <option name="number" value="00009" />
-      <option name="presentableId" value="LOCAL-00009" />
-      <option name="project" value="LOCAL" />
-      <updated>1525266054539</updated>
     </task>
     <task id="LOCAL-00010" summary="pre-ideal benchmark">
       <created>1525355328312</created>
@@ -698,7 +625,28 @@
       <option name="project" value="LOCAL" />
       <updated>1530274685172</updated>
     </task>
-    <option name="localTasksCounter" value="56" />
+    <task id="LOCAL-00056" summary="reimplement client using worker threads">
+      <created>1530286526731</created>
+      <option name="number" value="00056" />
+      <option name="presentableId" value="LOCAL-00056" />
+      <option name="project" value="LOCAL" />
+      <updated>1530286526731</updated>
+    </task>
+    <task id="LOCAL-00057" summary="delete old client, rename new client">
+      <created>1530286562788</created>
+      <option name="number" value="00057" />
+      <option name="presentableId" value="LOCAL-00057" />
+      <option name="project" value="LOCAL" />
+      <updated>1530286562788</updated>
+    </task>
+    <task id="LOCAL-00058" summary="TODOs">
+      <created>1530298644198</created>
+      <option name="number" value="00058" />
+      <option name="presentableId" value="LOCAL-00058" />
+      <option name="project" value="LOCAL" />
+      <updated>1530298644198</updated>
+    </task>
+    <option name="localTasksCounter" value="59" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -767,9 +715,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="add offset to samples timestamps" />
-    <MESSAGE value="draw start times from uniform distribution" />
-    <MESSAGE value="fix get remote stats" />
     <MESSAGE value="logging" />
     <MESSAGE value="logging in client and to file!" />
     <MESSAGE value="fix logging" />
@@ -792,7 +737,10 @@
     <MESSAGE value="get list of cores to run on" />
     <MESSAGE value="refactor docker management" />
     <MESSAGE value="new client implementation" />
-    <option name="LAST_COMMIT_MESSAGE" value="new client implementation" />
+    <MESSAGE value="reimplement client using worker threads" />
+    <MESSAGE value="delete old client, rename new client" />
+    <MESSAGE value="TODOs" />
+    <option name="LAST_COMMIT_MESSAGE" value="TODOs" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -1103,20 +1051,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/control.py">
+    <entry file="file://$PROJECT_DIR$/client.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="421">
-          <caret line="187" selection-start-line="187" selection-end-line="187" />
-          <folding>
-            <element signature="e#23#32#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/new_client.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="576">
-          <caret line="101" column="43" selection-start-line="101" selection-start-column="43" selection-end-line="101" selection-end-column="43" />
+        <state relative-caret-position="756">
+          <caret line="122" column="38" selection-start-line="122" selection-start-column="38" selection-end-line="122" selection-end-column="38" />
           <folding>
             <element signature="e#0#13#0" expanded="true" />
             <element signature="e#199#624#0" />
@@ -1147,6 +1085,16 @@
             <element signature="e#2907#3168#0" />
             <element signature="e#3917#4512#0" />
             <element signature="e#3738#3828#0" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/control.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="248">
+          <caret line="337" lean-forward="true" selection-start-line="337" selection-end-line="337" />
+          <folding>
+            <element signature="e#23#32#0" expanded="true" />
           </folding>
         </state>
       </provider>

@@ -28,7 +28,7 @@ CPU_CFS_PERIOD = 100000  # 100 000 microseconds, 100 ms
 
 def grouper(iterable, n, fillvalue=None):
     args = [iter(iterable)] * n
-    return list(itertools.zip_longest(*args, fillvalue=fillvalue))
+    return itertools.zip_longest(*args, fillvalue=fillvalue)
 
 
 class ShutdownException(Exception):
@@ -307,7 +307,9 @@ class Experiment:
 
                 # send traces, two clients at the time
                 LOGGER.info('Pushing step files to clients...')
-                chunks = grouper(self.clients, 2, fillvalue=NullClient())
+
+                # grouper is a generator, so wrap it in a list
+                chunks = list(grouper(self.clients, 2, fillvalue=NullClient()))
 
                 # use list comprehensions to avoid laziness (map())
                 step_data = [open(p, 'rb').read() for p in
@@ -320,14 +322,11 @@ class Experiment:
                     step_data
                 )
 
-                # TODO: refactor ugly nested for.
-                for index, chksum, data in steps:
-                    for chunk in chunks:
-                        for c in chunk:
-                            c.send_step(index, chksum, data)
-
-                        for c in chunk:
-                            c.wait_for_tasks()
+                for chunk, step in itertools.product(chunks, steps):
+                    for c in chunk:
+                        c.send_step(*step)
+                    for c in chunk:
+                        c.wait_for_tasks()
 
                 # execute runs!
                 for r in range(self.config.runs):
