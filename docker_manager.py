@@ -1,10 +1,12 @@
 import signal
 import time
-from multiprocessing import Process, Barrier
+from multiprocessing import Barrier, Process
+
+import docker
 
 import constants
+from config import ExperimentConfig
 from custom_logging.logging import LOGGER
-import docker
 
 
 class DockerManager(Process):
@@ -15,7 +17,7 @@ class DockerManager(Process):
     def __signal_handler(*args):
         raise DockerManager.ShutdownException()
 
-    def __init__(self, config):
+    def __init__(self, config: ExperimentConfig, sync_barrier: Barrier):
         self.dck = docker.from_env()
         self.containers = list()
         self.docker_img = config.docker_img
@@ -24,6 +26,8 @@ class DockerManager(Process):
         self.cpu_cores = config.cpu_cores
         self.cpu_set = ','.join(map(str, self.cpu_cores))
         self.port_configs = config.port_configs
+
+        self.barrier = sync_barrier
 
         super(DockerManager, self).__init__()
 
@@ -52,9 +56,11 @@ class DockerManager(Process):
                     )
                 )
 
-                LOGGER.info('Wait for container warm up...')
-                time.sleep(5)
+                LOGGER.info('Wait 5s for container warm up...')
+                time.sleep(5.0)
                 LOGGER.info('Initialization done')
+
+                self.barrier.wait()
 
                 while True:
                     time.sleep(1)

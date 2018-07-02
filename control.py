@@ -8,6 +8,7 @@ import shlex
 import signal
 import subprocess
 import time
+from multiprocessing import Barrier
 from random import shuffle
 from socket import *
 
@@ -69,8 +70,9 @@ class Experiment:
         self.port = port
         self.tcpdump_proc = None
         self.output_dir = output_dir
+        self.docker_barrier = Barrier(2)
 
-        self.docker_proc = DockerManager(self.config)
+        self.docker_proc = DockerManager(self.config, self.docker_barrier)
 
         self.ntp_client = ntplib.NTPClient()
         self.offset = 0
@@ -135,6 +137,7 @@ class Experiment:
         if self.tcpdump_proc.poll():
             raise RuntimeError('Could not start TCPDUMP!')
 
+    # noinspection PyProtectedMember
     def _gen_config_for_client(self, client_index):
         c = dict()
         c['experiment_id'] = self.config.name
@@ -270,6 +273,10 @@ class Experiment:
         error = None
 
         try:
+            # first start docker instances
+            self.docker_proc.start()
+            self.docker_barrier.wait()
+
             with socket(AF_INET, SOCK_STREAM) as server_socket:
                 server_socket.bind((self.host, self.port))
                 server_socket.listen(self.config.clients)
@@ -282,9 +289,6 @@ class Experiment:
 
                 signal.signal(signal.SIGINT, signal_handler)
                 signal.signal(signal.SIGTERM, signal_handler)
-
-                # start docker process
-                self.docker_proc.start()
 
                 # wait for all clients to connect
                 for i in range(self.config.clients):
@@ -334,7 +338,6 @@ class Experiment:
                     self.__execute_run(r)
 
         except ShutdownException:
-            # TODO: fix shutdown
             pass
 
         except Exception as e:
