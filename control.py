@@ -105,6 +105,7 @@ class Experiment:
 
         try:
             if self.docker_proc:
+                os.kill(self.docker_proc.pid, signal.SIGINT)
                 self.docker_proc.join()
         except Exception as e:
             LOGGER.error(

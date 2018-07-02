@@ -59,9 +59,9 @@ class DockerManager(Process):
                 while True:
                     time.sleep(1)
 
-        except DockerManager.ShutdownException \
-               or InterruptedError \
-               or KeyboardInterrupt:
+        except (DockerManager.ShutdownException,
+                InterruptedError,
+                KeyboardInterrupt):
             pass
 
         finally:
