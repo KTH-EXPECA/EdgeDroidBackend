@@ -70,9 +70,8 @@ class Experiment:
         self.port = port
         self.tcpdump_proc = None
         self.output_dir = output_dir
-        self.docker_barrier = Barrier(2)
 
-        self.docker_proc = BackendManager(self.config, self.docker_barrier)
+        self.backend_mgr = BackendManager(self.config)
 
         self.ntp_client = ntplib.NTPClient()
         self.offset = 0
@@ -106,13 +105,11 @@ class Experiment:
             LOGGER.error(e)
 
         try:
-            if self.docker_proc:
-                os.kill(self.docker_proc.pid, signal.SIGINT)
-                self.docker_proc.join()
+            if self.backend_mgr:
+                self.backend_mgr.shutdown()
         except Exception as e:
             LOGGER.error(
-                'Something went wrong while shutting down Docker containers'
-            )
+                'Something went wrong while shutting down Docker containers')
             LOGGER.error(e)
 
     def _init_tcpdump(self, run_path: str):
@@ -274,8 +271,7 @@ class Experiment:
 
         try:
             # first start docker instances
-            self.docker_proc.start()
-            self.docker_barrier.wait()
+            self.backend_mgr.spawn_backends()
 
             with socket(AF_INET, SOCK_STREAM) as server_socket:
                 server_socket.bind((self.host, self.port))
