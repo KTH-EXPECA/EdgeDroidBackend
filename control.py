@@ -20,7 +20,7 @@ import toml
 import constants
 from config import ExperimentConfig, RecursiveNestedDict
 from custom_logging.logging import LOGGER
-from docker_manager import DockerManager
+from backend_manager import BackendManager
 from monitor import ResourceMonitor
 from client import AsyncClient, NullClient
 
@@ -72,7 +72,7 @@ class Experiment:
         self.output_dir = output_dir
         self.docker_barrier = Barrier(2)
 
-        self.docker_proc = DockerManager(self.config, self.docker_barrier)
+        self.docker_proc = BackendManager(self.config, self.docker_barrier)
 
         self.ntp_client = ntplib.NTPClient()
         self.offset = 0

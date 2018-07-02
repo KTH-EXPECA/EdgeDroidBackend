@@ -9,13 +9,13 @@ from config import ExperimentConfig
 from custom_logging.logging import LOGGER
 
 
-class DockerManager(Process):
+class BackendManager(Process):
     class ShutdownException(Exception):
         pass
 
     @staticmethod
     def __signal_handler(*args):
-        raise DockerManager.ShutdownException()
+        raise BackendManager.ShutdownException()
 
     def __init__(self, config: ExperimentConfig, sync_barrier: Barrier):
         self.dck = docker.from_env()
@@ -29,7 +29,7 @@ class DockerManager(Process):
 
         self.barrier = sync_barrier
 
-        super(DockerManager, self).__init__()
+        super(BackendManager, self).__init__()
 
     def run(self):
         LOGGER.info('Spawning Docker containers...')
@@ -39,8 +39,8 @@ class DockerManager(Process):
                     f'Launching container {i + 1} of {self.clients}...')
 
                 # register signal handler
-                signal.signal(signal.SIGINT, DockerManager.__signal_handler)
-                signal.signal(signal.SIGTERM, DockerManager.__signal_handler)
+                signal.signal(signal.SIGINT, BackendManager.__signal_handler)
+                signal.signal(signal.SIGTERM, BackendManager.__signal_handler)
 
                 self.containers.append(
                     self.dck.containers.run(
@@ -65,7 +65,7 @@ class DockerManager(Process):
                 while True:
                     time.sleep(1)
 
-        except (DockerManager.ShutdownException,
+        except (BackendManager.ShutdownException,
                 InterruptedError,
                 KeyboardInterrupt):
             pass
