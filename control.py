@@ -19,6 +19,7 @@ import toml
 
 import constants
 from config import ExperimentConfig, RecursiveNestedDict
+from cpu_load_manager import CPULoadManager, NullCPULoadManager
 from custom_logging.logging import LOGGER
 from backend_manager import BackendManager
 from monitor import ResourceMonitor
@@ -72,6 +73,11 @@ class Experiment:
         self.output_dir = output_dir
 
         self.backend_mgr = BackendManager(self.config)
+
+        if self.config.gen_load:
+            self.load_mgr = CPULoadManager(self.config)
+        else:
+            self.load_mgr = NullCPULoadManager()
 
         self.ntp_client = ntplib.NTPClient()
         self.offset = 0
@@ -210,6 +216,9 @@ class Experiment:
             constants.DEFAULT_START_WINDOW,
             len(self.clients))
 
+        # start artificial CPU load
+        self.load_mgr.start_cpu_load()
+
         LOGGER.info('Execute experiment!')
         LOGGER.info('Starting resource monitor...')
         monitor = ResourceMonitor(self.offset)
@@ -230,6 +239,9 @@ class Experiment:
 
         LOGGER.info('Shut down monitor.')
         system_stats = monitor.shutdown()
+
+        # shut down CPU load generator
+        self.load_mgr.shutdown()
 
         time.sleep(1)
         LOGGER.info('Terminate TCPDUMP')

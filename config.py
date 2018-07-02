@@ -146,7 +146,8 @@ class ExperimentConfig:
             self.gen_load = toml_config.find(
                 'experiment.performance.artificial_load')
             self.target_load = toml_config.find(
-                'experiment.performance.artificial_load_percent')
+                'experiment.performance.artificial_load_percent') * 0.01
+            # load is in percent
 
             self.port_configs = []
             for port_cfg in toml_config.find('experiment.ports'):

@@ -1,6 +1,6 @@
 # Protocol definition for control server commands
 
-CONTROL_SERVER_VERSION = "0.6.1"
+CONTROL_SERVER_VERSION = "0.7.1"
 
 DEFAULT_CONTROLSERVER_HOST = '0.0.0.0'
 DEFAULT_CONTROLSERVER_PORT = 1337
@@ -37,7 +37,10 @@ DEFAULT_CONTROL_PORT = 22222
 DEFAULT_START_WINDOW = 10.0
 DEFAULT_NTP_POLL_COUNT = 11
 
-NET_IFACE = 'enp0s31f6'
+NET_IFACE = 'enp0s31f6'     # TODO: Parametrize
 
 TCPDUMP_CMD_PREFIX = ['tcpdump', '-s 0', '-i {}'.format(NET_IFACE)]
 TCPDUMP_CMD_SUFFIX = ['-w tcp.pcap']
+
+
+CPU_LOAD_IMG = 'molguin/cpuload'
