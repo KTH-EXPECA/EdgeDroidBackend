@@ -132,6 +132,7 @@ class AsyncClient(NullClient):
         return self.stats
 
     def __get_stats(self):
+        LOGGER.info('Getting stats from client %d', self.config['client_id'])
         buf = struct.pack('>I', constants.CMD_PULL_STATS)
         self.conn.sendall(buf)
         incoming_stats = recvJSON(self.conn)

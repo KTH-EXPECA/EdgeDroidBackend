@@ -1,6 +1,6 @@
 # Protocol definition for control server commands
 
-CONTROL_SERVER_VERSION = "0.7.1"
+CONTROL_SERVER_VERSION = "0.7.2"
 
 DEFAULT_CONTROLSERVER_HOST = '0.0.0.0'
 DEFAULT_CONTROLSERVER_PORT = 1337

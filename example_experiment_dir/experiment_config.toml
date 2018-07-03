@@ -21,8 +21,8 @@
     # indices of cores available to the docker instances. Empty list indicates to use all available cores:
     cpu_cores = [0]
 
-    artificial_load = true # generate additional "fake" load on the CPUs?
-    artificial_load_percent = 50
+    artificial_load = false # generate additional "fake" load on the CPUs?
+    artificial_load_percent = 0
 
 [[experiment.ports]]
     # array of port configurations for each client, see (*)
