@@ -1,9 +1,9 @@
 [experiment]
     # general experiment settings
     name = "LEGOHead2"
-    docker_img = "jamesjue/gabriel-lego"
+    docker_img = "molguin/gabriel-lego"
     clients = 1
-    runs = 2
+    runs = 3
 
 [experiment.trace]
     # settings pertaining to the trace used in the experiment
@@ -22,7 +22,7 @@
     cpu_cores = [0]
 
     artificial_load = false # generate additional "fake" load on the CPUs?
-    artificial_load_percent = 0
+    artificial_load_percent = 100
 
 [[experiment.ports]]
     # array of port configurations for each client, see (*)

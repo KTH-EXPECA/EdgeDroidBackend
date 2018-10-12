@@ -197,9 +197,9 @@ class Experiment:
         for client in self.clients:
             client.ntp_sync()
 
-        self._init_tcpdump(run_path)
-        LOGGER.info('TCPdump warmup...')
-        time.sleep(5)
+        # self._init_tcpdump(run_path)
+        # LOGGER.info('TCPdump warmup...')
+        # time.sleep(5)
 
         # make sure all clients are done syncing NTP before starting the
         # experiment
@@ -244,9 +244,9 @@ class Experiment:
         self.load_mgr.shutdown()
 
         time.sleep(1)
-        LOGGER.info('Terminate TCPDUMP')
-        self.tcpdump_proc.send_signal(signal.SIGINT)
-        self.tcpdump_proc.wait()
+        # LOGGER.info('Terminate TCPDUMP')
+        # self.tcpdump_proc.send_signal(signal.SIGINT)
+        # self.tcpdump_proc.wait()
 
         LOGGER.info('Get stats from clients!')
         for client in self.clients:
