@@ -2,13 +2,16 @@
     # general experiment settings
     name = "LEGOHead2"
     docker_img = "molguin/gabriel-lego"
-    clients = 1
-    runs = 3
+    clients = 1 # number of clients
+    runs = 3 # number of repetitions
 
 [experiment.trace]
     # settings pertaining to the trace used in the experiment
     steps = 7
-    dir = "/home/molguin/workspace/CAPerformance_WS/CognitiveAssistance_Traces/lego/HeadTrace2"
+    
+    # relative location of the directory containing the traces:
+    dir = "../Traces/lego/HeadTrace2"
+
     fps = 15
     rewind_seconds = 5
     max_replays = 3

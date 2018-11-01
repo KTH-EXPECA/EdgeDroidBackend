@@ -1,14 +1,16 @@
-# Control server for Gabriel Client Emulator
+# Control server for EdgeDroid
 
-Configures and collects statistics from Gabriel Client Emulators.
+Configures experiment and collects statistics.
 
 ## Requirements
 
 - Install and configure [Docker](https://www.docker.com/).
 
-  - Although the script automatically downloads and builds the required Docker container image if needed, it's still recommended to do it once by hand: ```docker pull jamesjue/gabriel-lego```
+  - Although the script automatically downloads and builds the required Docker container image if needed, it's still recommended to do it once by hand: ```docker pull molguin/gabriel-lego```
 
-- Install [tcpdump](http://www.tcpdump.org/) and configure your *sudoers* file to allow capture of packets as a non-root user:
+- This is not currently needed as we're not using TCPDump for the time being! Timestamping is done at application level.
+
+    ~~Install [tcpdump](http://www.tcpdump.org/) and configure your *sudoers* file to allow capture of packets as a non-root user:~~
 
 ```bash
 $ sudo visudo
@@ -20,26 +22,31 @@ $ sudo visudo
 ...
 ```
 
-- Cellphone clients must be running the latest version of the [ClientEmulator](https://github.com/molguin92/GabrielClientEmulator).
 
-## Usage
-
-1. Setup a virtualenv with Python 3.6: 
+- Set up a virtualenv with Python 3.x: 
 ```bash
 $ virtualenv --python=python3 ./venv
 $ . ./venv/bin/activate
 ```
 
-2. Install dependencies:
+- Install dependencies:
 
 ```bash
-$ pip install -r requirements.txt
+$ pip install -r requirements.txt --upgrade
 ```
 
-3. Set up an experiment configuration JSON file. See file ```example_experiment_config.json``` for an example of the general structure.
+- Open port 1337 (on Ubuntu: `$ ufw allow 1337`).
 
-4. Run the backend, passing your configuration file as argument:
+## Setting up and running an experiment
+
+1. Set up an experiment directory. Use `example_experiment_dir` as a boilerplate.
+
+2. Set up an experiment configuration TOML file. See file `example_experiment_dir\experiment_config.toml` for an example of the general structure. 
+    - Make sure all the ports declared in the experiment configuration file are open.
+    - Make sure the `experiment.trace.dir` key points to the correct directory containing the experiment trace.
+
+3. Run the backend, passing the experiment directory as a parameter. Results will be output there as well.
 ```bash
-$ python ./control.py experiment_config.json --output_dir=/tmp/control_test
+$ python ./control.py example_experiment_dir
 ```
 
