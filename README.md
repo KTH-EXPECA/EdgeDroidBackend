@@ -50,3 +50,8 @@ $ pip install -r requirements.txt --upgrade
 $ python ./control.py example_experiment_dir
 ```
 
+## License
+
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
+See [LICENSE](LICENSE) for details.
