@@ -13,7 +13,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 """
-
+import datetime
 import socket
 import time
 from threading import Thread, Event, Condition, RLock
@@ -134,8 +134,41 @@ class AsyncClient(NullClient):
         self.__enqueue_task(AsyncClient.__ntp_sync)
 
     def __ntp_sync(self):
-        buf = struct.pack('>I', constants.CMD_SYNC_NTP)
+        buf = struct.pack('>I', constants.CMD_SYNC_CLOCK)
         self.conn.sendall(buf)
+
+        # go into sync mode
+        # wait for sync start:
+        start_cmd_b = recvall(self.conn, 4)
+        (start_cmd,) = struct.unpack('>I', start_cmd_b)
+        if start_cmd != constants.CMD_SYNC_CLOCK_START:
+            raise Exception(f'Client {self.address}: failed to start clock '
+                            f'synchronization.')
+
+        # todo: add minimum delay estimation
+        t0 = datetime.datetime.now()  # init time
+        while (True):
+            # wait for beacon
+            beacon_b = recvall(self.conn, 4)
+            tbr = datetime.datetime.now() - t0
+            (beacon,) = struct.unpack('>I', beacon_b)
+            if beacon == constants.CMD_SYNC_CLOCK_END:
+                break
+            elif beacon != constants.CMD_SYNC_CLOCK_BEACON:
+                raise Exception(f'Client {self.address}: did not receive '
+                                f'expected beacon.')
+
+            # reply
+            # one-liner to try to get some additional efficiency in the
+            # timestamping
+            self.conn.sendall(
+                struct.pack(
+                    '>Idd',
+                    tbr.total_seconds() * 1000000.0,  # 1 million µs per second
+                    (datetime.datetime.now() - t0).total_seconds() * 1000000.0
+                ))
+
+        # sync done.
         self.__wait_for_confirmation()
 
     def fetch_stats(self):

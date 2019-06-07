@@ -207,9 +207,11 @@ class Experiment:
             os.mkdir(run_path)
 
         # sync NTP
-        self._pollNTPServer()
+        # self._pollNTPServer()
 
-        LOGGER.info('Trigger client NTP sync')
+        # todo: estimate minimum local delay
+
+        LOGGER.info('Trigger clock sync')
         for client in self.clients:
             client.ntp_sync()
 
