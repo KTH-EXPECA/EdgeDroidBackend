@@ -213,7 +213,7 @@ class Experiment:
 
         LOGGER.info('Trigger clock sync')
         for client in self.clients:
-            client.ntp_sync()
+            client.clock_sync()
 
         # self._init_tcpdump(run_path)
         # LOGGER.info('TCPdump warmup...')

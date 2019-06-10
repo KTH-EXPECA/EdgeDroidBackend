@@ -34,7 +34,7 @@ class NullClient:
     def shutdown(self):
         pass
 
-    def ntp_sync(self):
+    def clock_sync(self):
         pass
 
     def fetch_stats(self):
@@ -130,27 +130,37 @@ class AsyncClient(NullClient):
             raise Exception(
                 f'Client {self.address}: error on confirmation!')
 
-    def ntp_sync(self):
-        self.__enqueue_task(AsyncClient.__ntp_sync)
+    def clock_sync(self):
+        self.__enqueue_task(AsyncClient.__clock_sync)
 
-    def __ntp_sync(self):
+    def __clock_sync(self):
         buf = struct.pack('>I', constants.CMD_SYNC_CLOCK)
         self.conn.sendall(buf)
 
-        # go into sync mode
-        # wait for sync start:
-        start_cmd_b = recvall(self.conn, 4)
-        (start_cmd,) = struct.unpack('>I', start_cmd_b)
+        start_cmd = -1
+        for i in range(10):
+            # go into sync mode
+            # wait for sync start:
+            start_cmd_b = recvall(self.conn, 4)
+            (start_cmd,) = struct.unpack('>I', start_cmd_b)
+            if start_cmd != constants.CMD_SYNC_CLOCK_START:
+                continue
+            else:
+                break
+
         if start_cmd != constants.CMD_SYNC_CLOCK_START:
             raise Exception(f'Client {self.address}: failed to start clock '
                             f'synchronization.')
 
+        LOGGER.info(
+            f'Client {self.config["client_id"]}: '
+            f'got clock sync start command.')
+
         # todo: add minimum delay estimation
-        t0 = datetime.datetime.now()  # init time
-        while (True):
+        while True:
             # wait for beacon
             beacon_b = recvall(self.conn, 4)
-            tbr = datetime.datetime.now() - t0
+            tbr = time.time()  # we work with absolute time here
             (beacon,) = struct.unpack('>I', beacon_b)
             if beacon == constants.CMD_SYNC_CLOCK_END:
                 break
@@ -164,8 +174,9 @@ class AsyncClient(NullClient):
             self.conn.sendall(
                 struct.pack(
                     '>Idd',
-                    tbr.total_seconds() * 1000000.0,  # 1 million µs per second
-                    (datetime.datetime.now() - t0).total_seconds() * 1000000.0
+                    constants.CMD_SYNC_CLOCK_REPLY,
+                    tbr * 1000.0,  # 1 s = 1 000 ms
+                    time.time() * 1000.0
                 ))
 
         # sync done.
